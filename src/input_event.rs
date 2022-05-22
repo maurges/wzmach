@@ -31,7 +31,7 @@ impl LibinputInterface for Interface {
 
 /* Gesture Information */
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Gesture {
     None,
     Swipe(SwipeGesture),
@@ -39,7 +39,7 @@ pub enum Gesture {
     Hold(HoldGesture),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct SwipeGesture {
     pub begin_time: u32,
     pub fingers: i32,
@@ -47,7 +47,7 @@ pub struct SwipeGesture {
     pub dy: f64,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct PinchGesture {
     pub begin_time: u32,
     pub fingers: i32,
@@ -56,7 +56,7 @@ pub struct PinchGesture {
     pub dy: f64,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct HoldGesture {
     pub begin_time: u32,
     pub fingers: i32,
@@ -213,10 +213,6 @@ impl GestureProducer {
         }
     }
 
-    pub fn current(&self) -> &Gesture {
-        &self.current
-    }
-
     fn poll_events(&mut self) {
         use nix::poll::{poll, PollFlags, PollFd};
         let pollfd = PollFd::new(self.input.as_raw_fd(), PollFlags::POLLIN);
@@ -225,13 +221,34 @@ impl GestureProducer {
     }
 }
 
+// Second arg is latest time for event
+#[derive(PartialEq, Debug)]
+pub enum InputEvent {
+    Ongoing(Gesture, u32),
+    Ended(Gesture, u32),
+    Cancelled(Gesture, u32)
+}
+
+impl InputEvent {
+    fn from_state(state: GestureState, current: &Gesture) -> Self {
+        match state {
+            GestureState::Ongoing(time) =>
+                InputEvent::Ongoing(current.clone(), time),
+            GestureState::Ended(g, t) => InputEvent::Ended(g, t),
+            GestureState::Cancelled(g, t) => InputEvent::Cancelled(g, t),
+        }
+    }
+}
+
 impl Iterator for GestureProducer {
-    type Item = GestureState;
-    fn next(&mut self) -> Option<GestureState> {
+    type Item = InputEvent;
+    fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.input.next() {
-                Some(input::Event::Gesture(gest)) =>
-                    break Some(self.current.update(&gest)),
+                Some(input::Event::Gesture(gest)) => {
+                    let state = self.current.update(&gest);
+                    break Some(InputEvent::from_state(state, &self.current))
+                },
                 Some(_) => (),
                 None => self.poll_events(),
             }
