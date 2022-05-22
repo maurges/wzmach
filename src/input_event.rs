@@ -216,7 +216,7 @@ impl GestureProducer {
 }
 
 // Second arg is latest time for event
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum InputEvent {
     Ongoing(Gesture, u32),
     Ended(Gesture, u32),
