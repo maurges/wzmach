@@ -1,9 +1,14 @@
 use std::fs::{File, OpenOptions};
-use std::os::unix::{fs::OpenOptionsExt, io::{RawFd, FromRawFd, IntoRawFd, AsRawFd}};
+use std::os::unix::{
+    fs::OpenOptionsExt,
+    io::{AsRawFd, FromRawFd, IntoRawFd, RawFd},
+};
 use std::path::Path;
 
+use input::event::gesture::{
+    GestureEndEvent, GestureEventCoordinates, GestureEventTrait, GesturePinchEventTrait,
+};
 use input::{Libinput, LibinputInterface};
-use input::event::gesture::{GestureEventCoordinates, GesturePinchEventTrait, GestureEventTrait, GestureEndEvent};
 use libc::{O_RDONLY, O_RDWR, O_WRONLY};
 
 /* Libinput thing */
@@ -69,7 +74,7 @@ pub enum GestureState {
     /// Args are: event that just finished, time of finish
     Ended(Gesture, u32),
     /// Args are: event that just finished, time of finish
-    Cancelled(Gesture, u32)
+    Cancelled(Gesture, u32),
 }
 
 impl Gesture {
@@ -85,17 +90,16 @@ impl Gesture {
                         dy: 0.0,
                     });
                     GestureState::Ongoing(gest.time())
-                },
+                }
                 GestureSwipeEvent::Update(ev) => {
                     self.update_coords(ev);
                     GestureState::Ongoing(gest.time())
-                },
-                GestureSwipeEvent::End(ev) =>
-                    self.end_gesture(ev),
+                }
+                GestureSwipeEvent::End(ev) => self.end_gesture(ev),
                 _ => {
                     eprintln!("WARNING: swipe update from the future");
                     GestureState::Ongoing(gest.time())
-                },
+                }
             },
             GestureEvent::Pinch(pc) => match pc {
                 GesturePinchEvent::Begin(_ev) => {
@@ -107,21 +111,20 @@ impl Gesture {
                         dy: 0.0,
                     });
                     GestureState::Ongoing(gest.time())
-                },
+                }
                 GesturePinchEvent::Update(ev) => {
                     self.update_coords(ev);
                     self.update_scale(ev);
                     GestureState::Ongoing(gest.time())
-                },
+                }
                 GesturePinchEvent::End(ev) => {
                     self.update_scale(ev);
                     self.end_gesture(ev)
-                },
+                }
                 _ => {
                     eprintln!("WARNING: pinch update from the future");
                     GestureState::Ongoing(gest.time())
-                },
-
+                }
             },
             GestureEvent::Hold(ho) => match ho {
                 GestureHoldEvent::Begin(_ev) => {
@@ -130,21 +133,19 @@ impl Gesture {
                         fingers: gest.finger_count(),
                     });
                     GestureState::Ongoing(gest.time())
-                },
-                GestureHoldEvent::End(_ev) =>
-                    GestureState::Ended(
-                        std::mem::replace(self, Gesture::None),
-                        gest.time(),
-                    ),
+                }
+                GestureHoldEvent::End(_ev) => {
+                    GestureState::Ended(std::mem::replace(self, Gesture::None), gest.time())
+                }
                 _ => {
                     eprintln!("WARNING: hold update from the future");
                     GestureState::Ongoing(gest.time())
-                },
-            }
+                }
+            },
             _ => {
                 eprintln!("WARNING: event from the future");
                 GestureState::Ongoing(gest.time())
-            },
+            }
         }
     }
 
@@ -153,37 +154,30 @@ impl Gesture {
             Gesture::Swipe(ref mut swipe) => {
                 swipe.dx += upd.dx();
                 swipe.dy += upd.dy();
-            },
+            }
             Gesture::Pinch(ref mut pinch) => {
                 pinch.dx += upd.dx();
                 pinch.dy += upd.dy();
-            },
-            _ => eprintln!("ERROR: impossible coords update!")
+            }
+            _ => eprintln!("ERROR: impossible coords update!"),
         }
     }
 
     fn update_scale(&mut self, upd: &dyn GesturePinchEventTrait) {
         match *self {
-            Gesture::Pinch(ref mut pinch) => {
-                pinch.scale = upd.scale()
-            },
-            _ => eprintln!("ERROR: impossible scale update!")
+            Gesture::Pinch(ref mut pinch) => pinch.scale = upd.scale(),
+            _ => eprintln!("ERROR: impossible scale update!"),
         }
     }
 
     fn end_gesture<T>(&mut self, upd: &T) -> GestureState
-        where T: GestureEventTrait + GestureEndEvent
+    where
+        T: GestureEventTrait + GestureEndEvent,
     {
         if upd.cancelled() {
-            GestureState::Cancelled(
-                std::mem::replace(self, Gesture::None),
-                upd.time(),
-            )
+            GestureState::Cancelled(std::mem::replace(self, Gesture::None), upd.time())
         } else {
-            GestureState::Ended(
-                std::mem::replace(self, Gesture::None),
-                upd.time(),
-            )
+            GestureState::Ended(std::mem::replace(self, Gesture::None), upd.time())
         }
     }
 }
@@ -214,9 +208,9 @@ impl GestureProducer {
     }
 
     fn poll_events(&mut self) {
-        use nix::poll::{poll, PollFlags, PollFd};
-        let pollfd = PollFd::new(self.input.as_raw_fd(), PollFlags::POLLIN);
-        poll(&mut [pollfd], -1).unwrap();
+        use nix::poll::PollFlags;
+        let pollfd = nix::poll::PollFd::new(self.input.as_raw_fd(), PollFlags::POLLIN);
+        nix::poll::poll(&mut [pollfd], -1).unwrap();
         self.input.dispatch().unwrap();
     }
 }
@@ -226,14 +220,13 @@ impl GestureProducer {
 pub enum InputEvent {
     Ongoing(Gesture, u32),
     Ended(Gesture, u32),
-    Cancelled(Gesture, u32)
+    Cancelled(Gesture, u32),
 }
 
 impl InputEvent {
     fn from_state(state: GestureState, current: &Gesture) -> Self {
         match state {
-            GestureState::Ongoing(time) =>
-                InputEvent::Ongoing(current.clone(), time),
+            GestureState::Ongoing(time) => InputEvent::Ongoing(current.clone(), time),
             GestureState::Ended(g, t) => InputEvent::Ended(g, t),
             GestureState::Cancelled(g, t) => InputEvent::Cancelled(g, t),
         }
@@ -247,8 +240,8 @@ impl Iterator for GestureProducer {
             match self.input.next() {
                 Some(input::Event::Gesture(gest)) => {
                     let state = self.current.update(&gest);
-                    break Some(InputEvent::from_state(state, &self.current))
-                },
+                    break Some(InputEvent::from_state(state, &self.current));
+                }
                 Some(_) => (),
                 None => self.poll_events(),
             }
