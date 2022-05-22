@@ -19,22 +19,22 @@ fn main() {
         let mut ts = Vec::new();
         use gesture_event::*;
         for fingers in 2..5 {
-            ts.push(Trigger::Swipe(SwipeTrigger {
+            ts.push(Trigger::Swipe(CardinalTrigger {
                 fingers: FingerCount::new(fingers),
                 direction: Direction::Up,
                 distance: Distance::new(100),
             }));
-            ts.push(Trigger::Swipe(SwipeTrigger {
+            ts.push(Trigger::Swipe(CardinalTrigger {
                 fingers: FingerCount::new(fingers),
                 direction: Direction::Down,
                 distance: Distance::new(100),
             }));
-            ts.push(Trigger::Swipe(SwipeTrigger {
+            ts.push(Trigger::Swipe(CardinalTrigger {
                 fingers: FingerCount::new(fingers),
                 direction: Direction::Left,
                 distance: Distance::new(100),
             }));
-            ts.push(Trigger::Swipe(SwipeTrigger {
+            ts.push(Trigger::Swipe(CardinalTrigger {
                 fingers: FingerCount::new(fingers),
                 direction: Direction::Right,
                 distance: Distance::new(100),
@@ -49,8 +49,24 @@ fn main() {
                 direction: PinchDirection::Out,
                 scale: 1.3,
             }));
-            ts.push(Trigger::PinchRotate(PinchRotateTrigger {
+            ts.push(Trigger::Shear(CardinalTrigger {
                 fingers: FingerCount::new(fingers),
+                direction: Direction::Up,
+                distance: Distance::new(100),
+            }));
+            ts.push(Trigger::Shear(CardinalTrigger {
+                fingers: FingerCount::new(fingers),
+                direction: Direction::Down,
+                distance: Distance::new(100),
+            }));
+            ts.push(Trigger::Shear(CardinalTrigger {
+                fingers: FingerCount::new(fingers),
+                direction: Direction::Left,
+                distance: Distance::new(100),
+            }));
+            ts.push(Trigger::Shear(CardinalTrigger {
+                fingers: FingerCount::new(fingers),
+                direction: Direction::Right,
                 distance: Distance::new(100),
             }));
             ts.push(Trigger::Hold(HoldTrigger {
