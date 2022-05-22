@@ -97,10 +97,12 @@ pub struct PinchTrigger {
 }
 impl PinchTrigger {
     fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
-        println!("consider {:?}, adjusted {}", gest, labs(gest.scale / origin));
+        //println!("consider {:?}, {:.3} < {:.3} < {:.3}", gest, origin / self.scale, gest.scale, origin * self.scale);
         self.fingers.0 == gest.fingers
-            && self.scale <= labs(gest.scale / origin)
-            && lsign(gest.scale) == self.direction.signum()
+            && match self.direction {
+                PinchDirection::In => origin * self.scale <= gest.scale,
+                PinchDirection::Out => origin / self.scale >= gest.scale,
+            }
     }
 }
 
