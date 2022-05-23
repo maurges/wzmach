@@ -1,5 +1,5 @@
-mod input_event;
 mod gesture_event;
+mod input_event;
 
 fn main() {
     let producer = input_event::GestureProducer::new();

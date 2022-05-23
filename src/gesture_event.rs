@@ -1,13 +1,11 @@
 /// High-level gesture completion events, produced from observing low-level
 /// gesture events. Register your 'Trigger's for events and observe them
 /// triggered
-
 pub mod trigger;
 use trigger::*;
 
-use crate::input_event::{GestureProducer, InputEvent, Gesture};
+use crate::input_event::{Gesture, GestureProducer, InputEvent};
 use sorted_vec::SortedSet;
-
 
 /// Adapt low-level gesture events into high-level events by triggers
 pub struct EventAdapter {
@@ -34,7 +32,11 @@ impl EventAdapter {
         EventAdapter {
             source,
             triggers: (*triggers).clone(),
-            adjust: Origin { x: 0.0, y: 0.0, scale: 1.0 },
+            adjust: Origin {
+                x: 0.0,
+                y: 0.0,
+                scale: 1.0,
+            },
             triggered: SortedSet::new(),
         }
     }
@@ -50,32 +52,31 @@ impl EventAdapter {
         let inds = self.triggers.iter().enumerate().filter_map(|(i, t)| {
             match (&gesture, t) {
                 (Gesture::None, _) => false,
-                (Gesture::Swipe(gs), Trigger::Swipe(ts)) =>
-                    ts.matches_swipe(gs, self.adjust),
+                (Gesture::Swipe(gs), Trigger::Swipe(ts)) => ts.matches_swipe(gs, self.adjust),
                 (Gesture::Swipe(_), _) => false,
 
-                (Gesture::Pinch(gp), Trigger::Pinch(tp)) =>
-                    tp.matches(gp, self.adjust.scale),
-                (Gesture::Pinch(gs), Trigger::Shear(ts)) =>
-                    ts.matches_shear(gs, self.adjust),
+                (Gesture::Pinch(gp), Trigger::Pinch(tp)) => tp.matches(gp, self.adjust.scale),
+                (Gesture::Pinch(gs), Trigger::Shear(ts)) => ts.matches_shear(gs, self.adjust),
                 (Gesture::Pinch(_), _) => false,
 
-                (Gesture::Hold(gh), Trigger::Hold(th)) =>
-                    th.matches(gh, ctime),
-                (Gesture::Hold(_), _) => false
-            }.then(|| i)
+                (Gesture::Hold(gh), Trigger::Hold(th)) => th.matches(gh, ctime),
+                (Gesture::Hold(_), _) => false,
+            }
+            .then(|| i)
         });
         // remove the ones that were triggered and are not repeated
-        let inds = inds.filter(|i| {
-            if !self.triggers[*i].repeated() {
-                match self.triggered.find_or_insert(*i) {
-                    sorted_vec::FindOrInsert::Found(_present_at) => false,
-                    sorted_vec::FindOrInsert::Inserted(_inserted_at) => true,
+        let inds = inds
+            .filter(|i| {
+                if !self.triggers[*i].repeated() {
+                    match self.triggered.find_or_insert(*i) {
+                        sorted_vec::FindOrInsert::Found(_present_at) => false,
+                        sorted_vec::FindOrInsert::Inserted(_inserted_at) => true,
+                    }
+                } else {
+                    true
                 }
-            } else {
-                true
-            }
-        }).collect::<Vec<usize>>();
+            })
+            .collect::<Vec<usize>>();
         // adjust the origin from triggers
         if ended {
             // adjust to neutral when end
@@ -166,7 +167,7 @@ mod test {
             distance: super::Distance::new(200),
             repeated: false,
         });
-        let mut adapter = super::EventAdapter::new (
+        let mut adapter = super::EventAdapter::new(
             crate::input_event::GestureProducer::new(),
             &vec![trigger_up, trigger_down],
         );
@@ -177,7 +178,7 @@ mod test {
                 begin_time: 0,
                 fingers: 3,
                 dx: 10.0,
-                dy: -101.0
+                dy: -101.0,
             }),
             10,
         );
@@ -186,7 +187,7 @@ mod test {
                 begin_time: 0,
                 fingers: 3,
                 dx: -20.0,
-                dy: -202.0
+                dy: -202.0,
             }),
             10,
         );
@@ -195,7 +196,7 @@ mod test {
                 begin_time: 0,
                 fingers: 3,
                 dx: 30.0,
-                dy: 10.0
+                dy: 10.0,
             }),
             20,
         );

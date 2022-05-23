@@ -1,5 +1,5 @@
-use crate::input_event::{SwipeGesture, PinchGesture, HoldGesture};
 use super::Origin;
+use crate::input_event::{HoldGesture, PinchGesture, SwipeGesture};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Direction {
@@ -16,14 +16,10 @@ impl Direction {
     fn matches(&self, dx: f64, dy: f64) -> bool {
         // from running libinput: up is negative, left is positive
         match self {
-            Direction::Up =>
-                dy <= VSLOPE * dx && dy <= -VSLOPE * dx,
-            Direction::Down =>
-                dy >= VSLOPE * dx && dy >= -VSLOPE * dx,
-            Direction::Right =>
-                dx >= HSLOPE * dy && dx >= -HSLOPE * dy,
-            Direction::Left =>
-                dx <= HSLOPE * dy && dx <= -HSLOPE * dy,
+            Direction::Up => dy <= VSLOPE * dx && dy <= -VSLOPE * dx,
+            Direction::Down => dy >= VSLOPE * dx && dy >= -VSLOPE * dx,
+            Direction::Right => dx >= HSLOPE * dy && dx >= -HSLOPE * dy,
+            Direction::Left => dx <= HSLOPE * dy && dx <= -HSLOPE * dy,
         }
     }
 }
@@ -32,7 +28,8 @@ impl Direction {
 /// Out means scale goes 1.0 -> 0.5
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum PinchDirection {
-    In, Out
+    In,
+    Out,
 }
 
 // i32 for easier comparing with raw events, but create from unsigned
@@ -92,15 +89,15 @@ impl CardinalTrigger {
     pub(crate) fn matches_swipe(&self, gest: &SwipeGesture, o: Origin) -> bool {
         self.fingers.0 == gest.fingers
             && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
-            && (   (gest.dx - o.x).abs() >= self.distance.0
-                || (gest.dy - o.y).abs() >= self.distance.0 )
+            && ((gest.dx - o.x).abs() >= self.distance.0
+                || (gest.dy - o.y).abs() >= self.distance.0)
     }
     // TODO: deduplicate. Same implementation, different types with same shape
     pub(crate) fn matches_shear(&self, gest: &PinchGesture, o: Origin) -> bool {
         self.fingers.0 == gest.fingers
             && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
-            && (   (gest.dx - o.x).abs() >= self.distance.0
-                || (gest.dy - o.y).abs() >= self.distance.0 )
+            && ((gest.dx - o.x).abs() >= self.distance.0
+                || (gest.dy - o.y).abs() >= self.distance.0)
     }
 }
 
@@ -129,8 +126,6 @@ pub struct HoldTrigger {
 }
 impl HoldTrigger {
     pub(crate) fn matches(&self, gest: &HoldGesture, ctime: u32) -> bool {
-        self.fingers.0 == gest.fingers
-            && ctime.saturating_sub(gest.begin_time) >= self.time
+        self.fingers.0 == gest.fingers && ctime.saturating_sub(gest.begin_time) >= self.time
     }
 }
-
