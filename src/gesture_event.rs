@@ -4,12 +4,12 @@
 pub mod trigger;
 use trigger::*;
 
-use crate::input_event::{Gesture, GestureProducer, InputEvent};
+use crate::input_event::{Gesture, InputEvent};
 use sorted_vec::SortedSet;
 
 /// Adapt low-level gesture events into high-level events by triggers
-pub struct EventAdapter {
-    source: GestureProducer,
+pub struct EventAdapter<T: Iterator<Item=InputEvent>> {
+    source: T,
     triggers: Vec<Trigger>,
     /// When trigger has happened, adjust the event displacements for triggers in
     /// other directions
@@ -24,11 +24,11 @@ pub(crate) struct Origin {
     scale: f64,
 }
 
-impl EventAdapter {
+impl<T: Iterator<Item=InputEvent>> EventAdapter<T> {
     /// Create event source from a low-level source. The created adapter will
     /// observe the given triggers. If the triggers conflict, the harder ones
     /// may never trigger
-    pub fn new(source: GestureProducer, triggers: &Vec<Trigger>) -> Self {
+    pub fn new(source: T, triggers: &Vec<Trigger>) -> Self {
         EventAdapter {
             source,
             triggers: (*triggers).clone(),
@@ -136,7 +136,7 @@ impl EventAdapter {
     }
 }
 
-impl Iterator for EventAdapter {
+impl<T: Iterator<Item=InputEvent>> Iterator for EventAdapter<T> {
     type Item = Vec<usize>;
     fn next(&mut self) -> Option<Self::Item> {
         // should I maybe yield all the empty events?
