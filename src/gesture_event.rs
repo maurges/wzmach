@@ -1,151 +1,50 @@
-use crate::input_event::{GestureProducer, InputEvent, Gesture, SwipeGesture, PinchGesture, HoldGesture};
+/// High-level gesture completion events, produced from observing low-level
+/// gesture events. Register your 'Trigger's for events and observe them
+/// triggered
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+pub mod trigger;
+use trigger::*;
 
-const VSLOPE: f64 = 1.0;
-const HSLOPE: f64 = 1.0 / VSLOPE;
+use crate::input_event::{GestureProducer, InputEvent, Gesture};
+use sorted_vec::SortedSet;
 
-impl Direction {
-    fn matches(&self, dx: f64, dy: f64) -> bool {
-        // from running libinput: up is negative, left is positive
-        match self {
-            Direction::Up =>
-                dy <= VSLOPE * dx && dy <= -VSLOPE * dx,
-            Direction::Down =>
-                dy >= VSLOPE * dx && dy >= -VSLOPE * dx,
-            Direction::Right =>
-                dx >= HSLOPE * dy && dx >= -HSLOPE * dy,
-            Direction::Left =>
-                dx <= HSLOPE * dy && dx <= -HSLOPE * dy,
-        }
-    }
-}
 
-/// In means scale goes 1.0 -> 1.5
-/// Out means scale goes 1.0 -> 0.5
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum PinchDirection {
-    In, Out
-}
-
-// i32 for easier comparing with raw events, but create from unsigned
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub struct FingerCount(i32);
-impl FingerCount {
-    pub fn new(c: u32) -> Self {
-        FingerCount(c.try_into().expect("You don't have that much fingers!"))
-    }
-}
-
-// f64 for easier comparing with raw events, but create from unsigned int
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub struct Distance(f64);
-impl Distance {
-    pub fn new(d: u32) -> Self {
-        Distance(d.try_into().expect("I though u32 -> f64 doesn't fail"))
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub enum Trigger {
-    Swipe(CardinalTrigger),
-    /// Here distance means scale
-    Pinch(PinchTrigger),
-    /// Here distance means... something, i'm not sure how rotation works
-    Shear(CardinalTrigger),
-    /// Sent only when hold ended
-    Hold(HoldTrigger),
-    // TODO: hold in progress. Need to track my own time, bleh
-}
-
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub struct CardinalTrigger {
-    pub fingers: FingerCount,
-    pub direction: Direction,
-    pub distance: Distance,
-}
-impl CardinalTrigger {
-    fn matches_swipe(&self, gest: &SwipeGesture, o: Origin) -> bool {
-        self.fingers.0 == gest.fingers
-            && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
-            && (   (gest.dx - o.x).abs() >= self.distance.0
-                || (gest.dy - o.y).abs() >= self.distance.0 )
-    }
-    // TODO: deduplicate. Same implementation, different types with same shape
-    fn matches_shear(&self, gest: &PinchGesture, o: Origin) -> bool {
-        self.fingers.0 == gest.fingers
-            && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
-            && (   (gest.dx - o.x).abs() >= self.distance.0
-                || (gest.dy - o.y).abs() >= self.distance.0 )
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub struct PinchTrigger {
-    pub fingers: FingerCount,
-    pub direction: PinchDirection,
-    pub scale: f64,
-}
-impl PinchTrigger {
-    fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
-        //println!("consider {:?}, {:.3} < {:.3} < {:.3}", gest, origin / self.scale, gest.scale, origin * self.scale);
-        self.fingers.0 == gest.fingers
-            && match self.direction {
-                PinchDirection::In => origin * self.scale <= gest.scale,
-                PinchDirection::Out => origin / self.scale >= gest.scale,
-            }
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub struct HoldTrigger {
-    pub fingers: FingerCount,
-    pub time: u32,
-}
-impl HoldTrigger {
-    fn matches(&self, gest: &HoldGesture, ctime: u32) -> bool {
-        self.fingers.0 == gest.fingers
-            && ctime.saturating_sub(gest.begin_time) >= self.time
-    }
-}
-
-/// Adapt raw gesture events into triggers
+/// Adapt low-level gesture events into high-level events by triggers
 pub struct EventAdapter {
     source: GestureProducer,
     triggers: Vec<Trigger>,
     /// When trigger has happened, adjust the event displacements for triggers in
     /// other directions
     adjust: Origin,
+    triggered: SortedSet<usize>,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
-struct Origin {
+pub(crate) struct Origin {
     x: f64,
     y: f64,
     scale: f64,
 }
 
 impl EventAdapter {
+    /// Create event source from a low-level source. The created adapter will
+    /// observe the given triggers. If the triggers conflict, the harder ones
+    /// may never trigger
     pub fn new(source: GestureProducer, triggers: &Vec<Trigger>) -> Self {
         EventAdapter {
             source,
             triggers: (*triggers).clone(),
             adjust: Origin { x: 0.0, y: 0.0, scale: 1.0 },
+            triggered: SortedSet::new(),
         }
     }
 
-    /// returns index of matched trigger
+    /// Returns index of matched trigger
     fn adapt(&mut self, event: InputEvent) -> Vec<usize> {
         let (gesture, ctime, ended) = match event {
             InputEvent::Ongoing(g, t) => (g, t, false),
-            InputEvent::Ended(g, t) => (g, t, false),
-            InputEvent::Cancelled(_, _) => return Vec::new(),
+            InputEvent::Ended(g, t) => (g, t, true),
+            InputEvent::Cancelled(_, t) => (Gesture::None, t, true),
         };
         // first collect matching indicies
         let inds = self.triggers.iter().enumerate().filter_map(|(i, t)| {
@@ -165,6 +64,17 @@ impl EventAdapter {
                     th.matches(gh, ctime),
                 (Gesture::Hold(_), _) => false
             }.then(|| i)
+        });
+        // remove the ones that were triggered and are not repeated
+        let inds = inds.filter(|i| {
+            if !self.triggers[*i].repeated() {
+                match self.triggered.find_or_insert(*i) {
+                    sorted_vec::FindOrInsert::Found(_present_at) => false,
+                    sorted_vec::FindOrInsert::Inserted(_inserted_at) => true,
+                }
+            } else {
+                true
+            }
         }).collect::<Vec<usize>>();
         // adjust the origin from triggers
         if ended {
@@ -173,7 +83,9 @@ impl EventAdapter {
                 x: 0.0,
                 y: 0.0,
                 scale: 1.0,
-            }
+            };
+            // we can retrigger everything again
+            self.triggered = sorted_vec::SortedSet::new();
         } else {
             // adjust the origin from the triggers. Only adjust once in each
             // direction, in case several triggers were in one direction
@@ -246,15 +158,17 @@ mod test {
             fingers: super::FingerCount::new(3),
             direction: super::Direction::Up,
             distance: super::Distance::new(200),
+            repeated: false,
         });
         let trigger_down = super::Trigger::Swipe(super::CardinalTrigger {
             fingers: super::FingerCount::new(3),
             direction: super::Direction::Down,
             distance: super::Distance::new(200),
+            repeated: false,
         });
         let mut adapter = super::EventAdapter::new (
             crate::input_event::GestureProducer::new(),
-            vec![trigger_up, trigger_down],
+            &vec![trigger_up, trigger_down],
         );
 
         use crate::input_event::*;

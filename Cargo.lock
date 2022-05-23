@@ -95,6 +95,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 
 [[package]]
+name = "sorted-vec"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da8edb37c24177a4d09d502f3755ef679986654742af1a50a6e4f9b68108d366"
+
+[[package]]
 name = "udev"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -112,4 +118,5 @@ dependencies = [
  "input",
  "libc",
  "nix",
+ "sorted-vec",
 ]
