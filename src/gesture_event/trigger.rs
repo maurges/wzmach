@@ -1,5 +1,8 @@
-use super::Origin;
-use crate::input_event::{HoldGesture, PinchGesture, SwipeGesture};
+/// Triggers for gesture recognition
+///
+/// pub(crate): These triggers can also perform computations to see if events
+/// match them
+use crate::input_producer::event::{HoldGesture, PinchGesture, SwipeGesture};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Direction {
@@ -128,4 +131,11 @@ impl HoldTrigger {
     pub(crate) fn matches(&self, gest: &HoldGesture, ctime: u32) -> bool {
         self.fingers.0 == gest.fingers && ctime.saturating_sub(gest.begin_time) >= self.time
     }
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub(crate) struct Origin {
+    pub x: f64,
+    pub y: f64,
+    pub scale: f64,
 }

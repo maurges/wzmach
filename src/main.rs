@@ -1,8 +1,8 @@
 mod gesture_event;
-mod input_event;
+mod input_producer;
 
 fn main() {
-    let producer = input_event::GestureProducer::new();
+    let producer = input_producer::GestureProducer::new();
 
     let mut args = std::env::args();
     let _name = args.next().unwrap();

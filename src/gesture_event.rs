@@ -2,13 +2,13 @@
 /// gesture events. Register your 'Trigger's for events and observe them
 /// triggered
 pub mod trigger;
-use trigger::*;
+use trigger::{CardinalTrigger, Direction, Origin, PinchDirection, Trigger};
 
-use crate::input_event::{Gesture, InputEvent};
+use crate::input_producer::event::{Gesture, InputEvent};
 use sorted_vec::SortedSet;
 
 /// Adapt low-level gesture events into high-level events by triggers
-pub struct EventAdapter<T: Iterator<Item=InputEvent>> {
+pub struct EventAdapter<T: Iterator<Item = InputEvent>> {
     source: T,
     triggers: Vec<Trigger>,
     /// When trigger has happened, adjust the event displacements for triggers in
@@ -17,14 +17,7 @@ pub struct EventAdapter<T: Iterator<Item=InputEvent>> {
     triggered: SortedSet<usize>,
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub(crate) struct Origin {
-    x: f64,
-    y: f64,
-    scale: f64,
-}
-
-impl<T: Iterator<Item=InputEvent>> EventAdapter<T> {
+impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
     /// Create event source from a low-level source. The created adapter will
     /// observe the given triggers. If the triggers conflict, the harder ones
     /// may never trigger
@@ -77,7 +70,6 @@ impl<T: Iterator<Item=InputEvent>> EventAdapter<T> {
                 }
             })
             .collect::<Vec<usize>>();
-        // adjust the origin from triggers
         if ended {
             // adjust to neutral when end
             self.adjust = Origin {
@@ -136,7 +128,7 @@ impl<T: Iterator<Item=InputEvent>> EventAdapter<T> {
     }
 }
 
-impl<T: Iterator<Item=InputEvent>> Iterator for EventAdapter<T> {
+impl<T: Iterator<Item = InputEvent>> Iterator for EventAdapter<T> {
     type Item = Vec<usize>;
     fn next(&mut self) -> Option<Self::Item> {
         // should I maybe yield all the empty events?
@@ -153,26 +145,30 @@ impl<T: Iterator<Item=InputEvent>> Iterator for EventAdapter<T> {
 
 #[cfg(test)]
 mod test {
+    use crate::gesture_event::trigger::{
+        CardinalTrigger, Direction, Distance, FingerCount, Trigger,
+    };
+
     #[test]
     fn swipe_up_down() {
-        let trigger_up = super::Trigger::Swipe(super::CardinalTrigger {
-            fingers: super::FingerCount::new(3),
-            direction: super::Direction::Up,
-            distance: super::Distance::new(200),
+        let trigger_up = Trigger::Swipe(CardinalTrigger {
+            fingers: FingerCount::new(3),
+            direction: Direction::Up,
+            distance: Distance::new(200),
             repeated: false,
         });
-        let trigger_down = super::Trigger::Swipe(super::CardinalTrigger {
-            fingers: super::FingerCount::new(3),
-            direction: super::Direction::Down,
-            distance: super::Distance::new(200),
+        let trigger_down = Trigger::Swipe(CardinalTrigger {
+            fingers: FingerCount::new(3),
+            direction: Direction::Down,
+            distance: Distance::new(200),
             repeated: false,
         });
         let mut adapter = super::EventAdapter::new(
-            crate::input_event::GestureProducer::new(),
+            crate::input_producer::GestureProducer::new(),
             &vec![trigger_up, trigger_down],
         );
 
-        use crate::input_event::*;
+        use crate::input_producer::event::*;
         let event_up_half = InputEvent::Ongoing(
             Gesture::Swipe(SwipeGesture {
                 begin_time: 0,
