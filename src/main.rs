@@ -1,5 +1,8 @@
 mod gesture_event;
 mod input_producer;
+mod action_sink;
+
+use action_sink::Action;
 
 fn main() {
     let producer = input_producer::GestureProducer::new();
@@ -11,10 +14,85 @@ fn main() {
             for event in producer {
                 println!("update: {:?}", event);
             }
-            return;
+        } else if s == "events" {
+            debug_events(producer);
         }
+        return;
     }
 
+    let device = action_sink::UinputAction::default_device();
+
+    use gesture_event::trigger::*;
+    use uinput::event::keyboard::Key;
+
+    let mut triggers = Vec::new();
+    let mut actions = Vec::new();
+    let trigger_3_up = Trigger::Swipe(CardinalTrigger {
+        fingers: FingerCount::new(3),
+        direction: Direction::Up,
+        distance: Distance::new(100),
+        repeated: false,
+    });
+    let action_3_up = action_sink::UinputAction {
+        device: device.clone(),
+        modifiers: vec![Key::RightControl],
+        sequence: vec![Key::T],
+    };
+    triggers.push(trigger_3_up);
+    actions.push(action_3_up);
+
+    let trigger_3_down = Trigger::Swipe(CardinalTrigger {
+        fingers: FingerCount::new(3),
+        direction: Direction::Down,
+        distance: Distance::new(100),
+        repeated: false,
+    });
+    let action_3_down = action_sink::UinputAction {
+        device: device.clone(),
+        modifiers: vec![Key::RightControl],
+        sequence: vec![Key::W],
+    };
+    triggers.push(trigger_3_down);
+    actions.push(action_3_down);
+
+    let trigger_3_left = Trigger::Swipe(CardinalTrigger {
+        fingers: FingerCount::new(3),
+        direction: Direction::Left,
+        distance: Distance::new(100),
+        repeated: false,
+    });
+    let action_3_left = action_sink::UinputAction {
+        device: device.clone(),
+        modifiers: vec![Key::RightControl],
+        sequence: vec![Key::PageDown],
+    };
+    triggers.push(trigger_3_left);
+    actions.push(action_3_left);
+
+    let trigger_3_right = Trigger::Swipe(CardinalTrigger {
+        fingers: FingerCount::new(3),
+        direction: Direction::Right,
+        distance: Distance::new(100),
+        repeated: false,
+    });
+    let action_3_right = action_sink::UinputAction {
+        device: device.clone(),
+        modifiers: vec![Key::RightControl],
+        sequence: vec![Key::PageUp],
+    };
+    triggers.push(trigger_3_right);
+    actions.push(action_3_right);
+
+
+    let events = gesture_event::EventAdapter::new(producer, &triggers);
+    for action_inds in events {
+        for index in action_inds {
+            actions[index].execute();
+        }
+    }
+}
+
+fn debug_events(producer: input_producer::GestureProducer) {
     let triggers = {
         let mut ts = Vec::new();
         use gesture_event::trigger::*;
