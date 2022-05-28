@@ -4,8 +4,9 @@
 //! match them
 
 use crate::input_producer::event::{HoldGesture, PinchGesture, SwipeGesture};
+use serde::Deserialize;
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
 pub enum Direction {
     Up,
     Down,
@@ -30,14 +31,15 @@ impl Direction {
 
 /// In means scale goes 1.0 -> 1.5
 /// Out means scale goes 1.0 -> 0.5
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
 pub enum PinchDirection {
     In,
     Out,
 }
 
 // i32 for easier comparing with raw events, but create from unsigned
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
+#[serde(transparent)]
 pub struct FingerCount(pub(crate) i32);
 impl FingerCount {
     pub fn new(c: u32) -> Self {
@@ -46,7 +48,8 @@ impl FingerCount {
 }
 
 // f64 for easier comparing with raw events, but create from unsigned int
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
+#[serde(transparent)]
 pub struct Distance(pub(crate) f64);
 impl Distance {
     pub fn new(d: u32) -> Self {
@@ -54,7 +57,7 @@ impl Distance {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
 pub enum Trigger {
     Swipe(CardinalTrigger),
     Pinch(PinchTrigger),
@@ -84,7 +87,7 @@ impl Trigger {
 /// swipes and shears.
 /// Wow, why rust still has the same record problems that haskell does? Why
 /// can't I just have my anonymous structs
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
 pub struct CardinalTrigger {
     pub fingers: FingerCount,
     pub direction: Direction,
@@ -107,7 +110,7 @@ impl CardinalTrigger {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
 pub struct PinchTrigger {
     pub fingers: FingerCount,
     pub direction: PinchDirection,
@@ -131,7 +134,7 @@ impl PinchTrigger {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
 pub struct HoldTrigger {
     pub fingers: FingerCount,
     pub time: u32,

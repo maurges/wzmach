@@ -1,101 +1,58 @@
+mod action_sink;
+mod config;
 mod gesture_event;
 mod input_producer;
-mod action_sink;
-
-use action_sink::Action;
 
 fn main() {
     env_logger::init();
     log::info!("initialized logging");
 
-    let producer = input_producer::GestureProducer::new();
-
+    // debug stuff
     let mut args = std::env::args();
     let _name = args.next().unwrap();
     if let Some(s) = args.next() {
+        let producer = input_producer::GestureProducer::new();
+        log::debug!("Created input connection");
         if s == "all" {
             for event in producer {
                 log::debug!("update: {:?}", event);
             }
         } else if s == "events" {
             debug_events(producer);
+        } else if s == "config" {
+            let location = args.next().unwrap_or("./config.ron".to_string());
+            let c = config::Config::load(location);
+            println!("{:?}", c);
         }
         return;
     }
 
-    let device = action_sink::UinputAction::default_device();
+    // read config
 
-    use gesture_event::trigger::*;
-    use uinput::event::keyboard::Key;
-
-    log::info!("Creating pipeline");
-
-    let mut triggers = Vec::new();
-    let mut actions = Vec::new();
-    let trigger_3_up = Trigger::Swipe(CardinalTrigger {
-        fingers: FingerCount::new(3),
-        direction: Direction::Up,
-        distance: Distance::new(100),
-        repeated: false,
-    });
-    let action_3_up = action_sink::UinputAction {
-        device: device.clone(),
-        modifiers: vec![Key::RightControl],
-        sequence: vec![Key::T],
+    let home = std::env::var_os("HOME").unwrap().into_string().unwrap();
+    let config_home = std::env::var_os("XDG_CONFIG_HOME")
+        .map(|x| x.into_string().unwrap())
+        .unwrap_or_else(|| home + "/.config");
+    let config_dir = config_home + "/wzmach/";
+    let config: config::Config = {
+        let common = config::Config::load(config_dir.clone() + "config.ron").unwrap_or_default();
+        let is_x11 = std::env::var_os("DISPLAY").is_some();
+        let local_name = if is_x11 { "x11.ron" } else { "wayland.ron" };
+        let local = config::Config::load(config_dir + local_name).unwrap_or_default();
+        common.combine(local)
     };
-    triggers.push(trigger_3_up);
-    actions.push(action_3_up);
 
-    let trigger_3_down = Trigger::Swipe(CardinalTrigger {
-        fingers: FingerCount::new(3),
-        direction: Direction::Down,
-        distance: Distance::new(100),
-        repeated: false,
-    });
-    let action_3_down = action_sink::UinputAction {
-        device: device.clone(),
-        modifiers: vec![Key::RightControl],
-        sequence: vec![Key::W],
-    };
-    triggers.push(trigger_3_down);
-    actions.push(action_3_down);
-
-    let trigger_3_left = Trigger::Swipe(CardinalTrigger {
-        fingers: FingerCount::new(3),
-        direction: Direction::Left,
-        distance: Distance::new(100),
-        repeated: false,
-    });
-    let action_3_left = action_sink::UinputAction {
-        device: device.clone(),
-        modifiers: vec![Key::RightControl],
-        sequence: vec![Key::PageDown],
-    };
-    triggers.push(trigger_3_left);
-    actions.push(action_3_left);
-
-    let trigger_3_right = Trigger::Swipe(CardinalTrigger {
-        fingers: FingerCount::new(3),
-        direction: Direction::Right,
-        distance: Distance::new(100),
-        repeated: false,
-    });
-    let action_3_right = action_sink::UinputAction {
-        device: device.clone(),
-        modifiers: vec![Key::RightControl],
-        sequence: vec![Key::PageUp],
-    };
-    triggers.push(trigger_3_right);
-    actions.push(action_3_right);
+    let (triggers, mut actions) = config.make_triggers();
 
     log::info!("Starting up");
+    let producer = input_producer::GestureProducer::new();
+    log::debug!("Created input connection");
     let events = gesture_event::EventAdapter::new(producer, &triggers);
     for action_inds in events {
         for index in action_inds {
             match actions[index].execute() {
                 Ok(()) => (),
-                Err(action_sink::ActionError(msg)) =>
-                    log::error!("{}", msg),
+                Err(action_sink::ActionError(msg)) => log::error!("{}", msg),
             }
         }
     }

@@ -1,5 +1,5 @@
-use uinput::event::keyboard::Key;
 use thiserror::Error;
+use uinput::event::keyboard::Key;
 
 #[derive(Error, Debug)]
 #[error("Failure executing action: {0}")]
@@ -17,10 +17,15 @@ pub struct UinputAction {
 
 impl UinputAction {
     pub fn default_device() -> std::rc::Rc<std::cell::RefCell<uinput::Device>> {
-        let device = uinput::open("/dev/uinput").unwrap()
-            .name("wzmach_virtual").unwrap()
-            .event(uinput::event::Keyboard::All).unwrap()
-            .create().unwrap();
+        let device = uinput::open("/dev/uinput")
+            .unwrap()
+            .name("wzmach_virtual")
+            .unwrap()
+            .event(uinput::event::Keyboard::All)
+            .unwrap()
+            .create()
+            .unwrap();
+        log::debug!("Created uinput device");
         std::rc::Rc::new(std::cell::RefCell::new(device))
     }
 }
