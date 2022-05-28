@@ -1,8 +1,13 @@
-pub trait Action {
-    fn execute(&mut self);
-}
-
 use uinput::event::keyboard::Key;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+#[error("Failure executing action: {0}")]
+pub struct ActionError(pub String);
+
+pub trait Action {
+    fn execute(&mut self) -> Result<(), ActionError>;
+}
 
 pub struct UinputAction {
     pub device: std::rc::Rc<std::cell::RefCell<uinput::Device>>,
@@ -20,19 +25,26 @@ impl UinputAction {
     }
 }
 
+impl From<uinput::Error> for ActionError {
+    fn from(err: uinput::Error) -> ActionError {
+        ActionError(format!("{}", err))
+    }
+}
+
 impl Action for UinputAction {
-    fn execute(&mut self) {
+    fn execute(&mut self) -> Result<(), ActionError> {
         let mut device = self.device.borrow_mut();
-        eprintln!("Execute action {:?} + {:?}", self.modifiers, self.sequence);
+        log::debug!("Execute action {:?} + {:?}", self.modifiers, self.sequence);
         for modifier in &self.modifiers {
-            device.press(modifier).expect("warn and abort action");
+            device.press(modifier)?;
         }
         for key in &self.sequence {
-            device.click(key).expect("warn and abort action");
+            device.click(key)?;
         }
         for modifier in self.modifiers.iter().rev() {
-            device.release(modifier).expect("warn and abort action");
+            device.release(modifier)?;
         }
-        device.synchronize().unwrap();
+        device.synchronize()?;
+        Ok(())
     }
 }

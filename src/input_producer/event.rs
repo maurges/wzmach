@@ -1,4 +1,6 @@
-/* Gesture Information */
+//! This module redefines libinput's events in a way that's easier to consume
+//! in gestures. It also provides routines for converting them and for updating
+//! the gesture state.
 
 use input::event::gesture::{
     GestureEndEvent, GestureEventCoordinates, GestureEventTrait, GesturePinchEventTrait,
@@ -46,6 +48,7 @@ pub enum GestureState {
 }
 
 impl Gesture {
+    /// Update the ongoing gesture with the data from libinput
     pub(crate) fn update(&mut self, gest: &input::event::GestureEvent) -> GestureState {
         use input::event::gesture::*;
         match gest {
@@ -65,7 +68,7 @@ impl Gesture {
                 }
                 GestureSwipeEvent::End(ev) => self.end_gesture(ev),
                 _ => {
-                    eprintln!("WARNING: swipe update from the future");
+                    log::warn!("Swipe update from the future");
                     GestureState::Ongoing(gest.time())
                 }
             },
@@ -90,7 +93,7 @@ impl Gesture {
                     self.end_gesture(ev)
                 }
                 _ => {
-                    eprintln!("WARNING: pinch update from the future");
+                    log::warn!("Pinch update from the future");
                     GestureState::Ongoing(gest.time())
                 }
             },
@@ -106,12 +109,12 @@ impl Gesture {
                     GestureState::Ended(std::mem::replace(self, Gesture::None), gest.time())
                 }
                 _ => {
-                    eprintln!("WARNING: hold update from the future");
+                    log::warn!("Hold update from the future");
                     GestureState::Ongoing(gest.time())
                 }
             },
             _ => {
-                eprintln!("WARNING: event from the future");
+                log::warn!("Event from the future");
                 GestureState::Ongoing(gest.time())
             }
         }
@@ -127,14 +130,14 @@ impl Gesture {
                 pinch.dx += upd.dx();
                 pinch.dy += upd.dy();
             }
-            _ => eprintln!("ERROR: impossible coords update!"),
+            _ => log::error!("Impossible coords update!"),
         }
     }
 
     fn update_scale(&mut self, upd: &dyn GesturePinchEventTrait) {
         match *self {
             Gesture::Pinch(ref mut pinch) => pinch.scale = upd.scale(),
-            _ => eprintln!("ERROR: impossible scale update!"),
+            _ => log::error!("Impossible scale update!"),
         }
     }
 
@@ -150,7 +153,8 @@ impl Gesture {
     }
 }
 
-// Second arg is latest time for event
+/// The event itself that you can observe.
+/// Second arg is latest time for event
 #[derive(PartialEq, Debug, Clone)]
 pub enum InputEvent {
     Ongoing(Gesture, u32),

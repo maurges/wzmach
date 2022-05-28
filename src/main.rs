@@ -5,6 +5,9 @@ mod action_sink;
 use action_sink::Action;
 
 fn main() {
+    env_logger::init();
+    log::info!("initialized logging");
+
     let producer = input_producer::GestureProducer::new();
 
     let mut args = std::env::args();
@@ -12,7 +15,7 @@ fn main() {
     if let Some(s) = args.next() {
         if s == "all" {
             for event in producer {
-                println!("update: {:?}", event);
+                log::debug!("update: {:?}", event);
             }
         } else if s == "events" {
             debug_events(producer);
@@ -24,6 +27,8 @@ fn main() {
 
     use gesture_event::trigger::*;
     use uinput::event::keyboard::Key;
+
+    log::info!("Creating pipeline");
 
     let mut triggers = Vec::new();
     let mut actions = Vec::new();
@@ -83,11 +88,15 @@ fn main() {
     triggers.push(trigger_3_right);
     actions.push(action_3_right);
 
-
+    log::info!("Starting up");
     let events = gesture_event::EventAdapter::new(producer, &triggers);
     for action_inds in events {
         for index in action_inds {
-            actions[index].execute();
+            match actions[index].execute() {
+                Ok(()) => (),
+                Err(action_sink::ActionError(msg)) =>
+                    log::error!("{}", msg),
+            }
         }
     }
 }
@@ -169,7 +178,7 @@ fn debug_events(producer: input_producer::GestureProducer) {
     let events = gesture_event::EventAdapter::new(producer, &triggers);
     for event in events {
         for i in event {
-            println!("triggered: {:?}", triggers[i]);
+            log::debug!("triggered: {:?}", triggers[i]);
         }
     }
 }

@@ -1,3 +1,6 @@
+//! Provides 'GestureProducer' that you can observe as an Iterator to get
+//! gesture events
+
 pub mod event;
 
 use event::{Gesture, InputEvent};
@@ -37,6 +40,7 @@ impl LibinputInterface for Interface {
 
 /* The gesture iterator */
 
+/// The producer of gesture input. Create and then use as iterator.
 pub struct GestureProducer {
     input: input::Libinput,
     current: Gesture,
@@ -50,6 +54,8 @@ impl GestureProducer {
         // LIBINPUT_EVENT_GESTURE_FOO_END is generated which signals the end of the
         // gesture.
         // Source: https://wayland.freedesktop.org/libinput/doc/latest/api/group__event__gesture.html
+        // But in the end it doesn't matter (explicitly) for this
+        // implementation. Maybe I implicitly depend on it somewhere..
 
         let mut input = Libinput::new_with_udev(Interface);
         input.udev_assign_seat("seat0").unwrap();

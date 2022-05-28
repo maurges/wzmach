@@ -1,7 +1,8 @@
-/// Triggers for gesture recognition
-///
-/// pub(crate): These triggers can also perform computations to see if events
-/// match them
+//! Triggers for gesture recognition
+//!
+//! pub(crate): These triggers can also perform computations to see if events
+//! match them
+
 use crate::input_producer::event::{HoldGesture, PinchGesture, SwipeGesture};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
@@ -80,7 +81,9 @@ impl Trigger {
 }
 
 /// Common struct for triggers in a certain direction over a certain distance:
-/// swipes and shears
+/// swipes and shears.
+/// Wow, why rust still has the same record problems that haskell does? Why
+/// can't I just have my anonymous structs
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct CardinalTrigger {
     pub fingers: FingerCount,
@@ -113,7 +116,13 @@ pub struct PinchTrigger {
 }
 impl PinchTrigger {
     pub(crate) fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
-        //println!("consider {:?}, {:.3} < {:.3} < {:.3}", gest, origin / self.scale, gest.scale, origin * self.scale);
+        log::trace!(
+            "consider {:?}, {:.3} < {:.3} < {:.3}",
+            gest,
+            origin / self.scale,
+            gest.scale,
+            origin * self.scale
+        );
         self.fingers.0 == gest.fingers
             && match self.direction {
                 PinchDirection::In => origin * self.scale <= gest.scale,
