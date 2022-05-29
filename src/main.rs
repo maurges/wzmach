@@ -7,7 +7,7 @@ fn main() {
     env_logger::init();
     log::info!("initialized logging");
 
-    // debug stuff
+    // debug stuff, controlled by args
     let mut args = std::env::args();
     let _name = args.next().unwrap();
     if let Some(s) = args.next() {
@@ -36,11 +36,13 @@ fn main() {
     let config_dir = config_home + "/wzmach/";
     let config: config::Config = {
         let common = config::Config::load(config_dir.clone() + "config.ron").unwrap_or_default();
-        let is_x11 = std::env::var_os("DISPLAY").is_some();
-        let local_name = if is_x11 { "x11.ron" } else { "wayland.ron" };
+        let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
+        let local_name = if is_wayland { "wayland.ron" } else { "x11.ron" };
         let local = config::Config::load(config_dir + local_name).unwrap_or_default();
         common.combine(local)
     };
+
+    // run
 
     let (triggers, mut actions) = config.make_triggers();
 
