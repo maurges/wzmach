@@ -2,7 +2,8 @@
 /// gesture events. Register your 'Trigger's for events and observe them
 /// triggered
 pub mod trigger;
-use trigger::{CardinalTrigger, Direction, Origin, PinchDirection, Trigger};
+use trigger::{CardinalTrigger, Origin, Trigger};
+use crate::common::{Direction, PinchDirection};
 
 use crate::input_producer::event::{Gesture, InputEvent};
 use sorted_vec::SortedSet;
@@ -89,19 +90,19 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                 if t.direction == Direction::Up && !adjusted_v {
                     adjusted_v = true;
                     // up is negative
-                    self.adjust.y -= t.distance.0;
+                    self.adjust.y -= t.distance;
                 } else if t.direction == Direction::Down && !adjusted_v {
                     adjusted_v = true;
                     // down is positive
-                    self.adjust.y += t.distance.0;
+                    self.adjust.y += t.distance;
                 } else if t.direction == Direction::Left && !adjusted_h {
                     adjusted_h = true;
                     // left is positive
-                    self.adjust.x -= t.distance.0;
+                    self.adjust.x -= t.distance;
                 } else if t.direction == Direction::Right && !adjusted_h {
                     adjusted_h = true;
                     // right is negative
-                    self.adjust.x += t.distance.0;
+                    self.adjust.x += t.distance;
                 }
             };
             for i in &inds {
@@ -146,21 +147,22 @@ impl<T: Iterator<Item = InputEvent>> Iterator for EventAdapter<T> {
 #[cfg(test)]
 mod test {
     use crate::gesture_event::trigger::{
-        CardinalTrigger, Direction, Distance, FingerCount, Trigger,
+        CardinalTrigger, Trigger,
     };
+    use crate::common::Direction;
 
     #[test]
     fn swipe_up_down() {
         let trigger_up = Trigger::Swipe(CardinalTrigger {
-            fingers: FingerCount::new(3),
+            fingers: 3,
             direction: Direction::Up,
-            distance: Distance::new(200),
+            distance: 200.0,
             repeated: false,
         });
         let trigger_down = Trigger::Swipe(CardinalTrigger {
-            fingers: FingerCount::new(3),
+            fingers: 3,
             direction: Direction::Down,
-            distance: Distance::new(200),
+            distance: 200.0,
             repeated: false,
         });
         let mut adapter = super::EventAdapter::new(

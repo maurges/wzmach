@@ -1,4 +1,5 @@
 mod action_sink;
+mod common;
 mod config;
 mod gesture_event;
 mod input_producer;
@@ -36,15 +37,14 @@ fn main() {
     let config_dir = config_home + "/wzmach/";
     let config: config::Config = {
         let common = config::Config::load(config_dir.clone() + "config.ron").unwrap_or_default();
-        let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
-        let local_name = if is_wayland { "wayland.ron" } else { "x11.ron" };
-        let local = config::Config::load(config_dir + local_name).unwrap_or_default();
-        common.combine(local)
+        // TODO maybe: search other locations
+        common
     };
+    let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
 
     // run
 
-    let (triggers, mut actions) = config.make_triggers();
+    let (triggers, mut actions) = config.make_triggers(is_wayland);
 
     log::info!("Starting up");
     let producer = input_producer::GestureProducer::new();
@@ -64,71 +64,72 @@ fn debug_events(producer: input_producer::GestureProducer) {
     let triggers = {
         let mut ts = Vec::new();
         use gesture_event::trigger::*;
+        use common::{Direction, PinchDirection};
         for fingers in 2..5 {
             for repeated in [false, true] {
                 ts.push(Trigger::Swipe(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Up,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Swipe(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Down,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Swipe(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Left,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Swipe(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Right,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Pinch(PinchTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: PinchDirection::In,
                     scale: 1.3,
                     repeated,
                 }));
                 ts.push(Trigger::Pinch(PinchTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: PinchDirection::Out,
                     scale: 1.3,
                     repeated,
                 }));
                 ts.push(Trigger::Shear(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Up,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Shear(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Down,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Shear(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Left,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
                 ts.push(Trigger::Shear(CardinalTrigger {
-                    fingers: FingerCount::new(fingers),
+                    fingers,
                     direction: Direction::Right,
-                    distance: Distance::new(100),
+                    distance: 100.0,
                     repeated,
                 }));
             }
             ts.push(Trigger::Hold(HoldTrigger {
-                fingers: FingerCount::new(fingers),
+                fingers,
                 time: 50,
             }));
         }

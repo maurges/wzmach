@@ -4,60 +4,12 @@
 //! match them
 
 use crate::input_producer::event::{HoldGesture, PinchGesture, SwipeGesture};
-use serde::Deserialize;
-
-#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+use crate::common::{Direction, PinchDirection};
 
 const VSLOPE: f64 = 1.0;
 const HSLOPE: f64 = 1.0 / VSLOPE;
 
-impl Direction {
-    fn matches(&self, dx: f64, dy: f64) -> bool {
-        // from running libinput: up is negative, left is positive
-        match self {
-            Direction::Up => dy <= VSLOPE * dx && dy <= -VSLOPE * dx,
-            Direction::Down => dy >= VSLOPE * dx && dy >= -VSLOPE * dx,
-            Direction::Right => dx >= HSLOPE * dy && dx >= -HSLOPE * dy,
-            Direction::Left => dx <= HSLOPE * dy && dx <= -HSLOPE * dy,
-        }
-    }
-}
-
-/// In means scale goes 1.0 -> 1.5
-/// Out means scale goes 1.0 -> 0.5
-#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
-pub enum PinchDirection {
-    In,
-    Out,
-}
-
-// i32 for easier comparing with raw events, but create from unsigned
-#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
-#[serde(transparent)]
-pub struct FingerCount(pub(crate) i32);
-impl FingerCount {
-    pub fn new(c: u32) -> Self {
-        FingerCount(c.try_into().expect("You don't have that much fingers!"))
-    }
-}
-
-// f64 for easier comparing with raw events, but create from unsigned int
-#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
-#[serde(transparent)]
-pub struct Distance(pub(crate) f64);
-impl Distance {
-    pub fn new(d: u32) -> Self {
-        Distance(d.try_into().expect("I though u32 -> f64 doesn't fail"))
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Trigger {
     Swipe(CardinalTrigger),
     Pinch(PinchTrigger),
@@ -71,6 +23,93 @@ pub enum Trigger {
     Hold(HoldTrigger),
     // TODO: hold in progress. Need to track my own time, bleh
 }
+
+/// Common struct for triggers in a certain direction over a certain distance:
+/// swipes and shears.
+/// Wow, why rust still has the same record problems that haskell does? Why
+/// can't I just have my anonymous structs
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct CardinalTrigger {
+    pub fingers: i32,
+    pub direction: Direction,
+    pub distance: f64,
+    pub repeated: bool,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct PinchTrigger {
+    pub fingers: i32,
+    pub direction: PinchDirection,
+    pub scale: f64,
+    pub repeated: bool,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct HoldTrigger {
+    pub fingers: i32,
+    pub time: u32,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub(crate) struct Origin {
+    pub x: f64,
+    pub y: f64,
+    pub scale: f64,
+}
+
+/* Impls for matchins */
+
+impl Direction {
+    fn matches(&self, dx: f64, dy: f64) -> bool {
+        // from running libinput: up is negative, left is positive
+        match self {
+            Direction::Up => dy <= VSLOPE * dx && dy <= -VSLOPE * dx,
+            Direction::Down => dy >= VSLOPE * dx && dy >= -VSLOPE * dx,
+            Direction::Right => dx >= HSLOPE * dy && dx >= -HSLOPE * dy,
+            Direction::Left => dx <= HSLOPE * dy && dx <= -HSLOPE * dy,
+        }
+    }
+}
+
+impl CardinalTrigger {
+    pub(crate) fn matches_swipe(&self, gest: &SwipeGesture, o: Origin) -> bool {
+        self.fingers == gest.fingers
+            && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
+            && ((gest.dx - o.x).abs() >= self.distance
+                || (gest.dy - o.y).abs() >= self.distance)
+    }
+    // TODO: deduplicate. Same implementation, different types with same shape
+    pub(crate) fn matches_shear(&self, gest: &PinchGesture, o: Origin) -> bool {
+        self.fingers == gest.fingers
+            && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
+            && ((gest.dx - o.x).abs() >= self.distance
+                || (gest.dy - o.y).abs() >= self.distance)
+    }
+}
+
+impl PinchTrigger {
+    pub(crate) fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
+        log::trace!(
+            "consider {:?}, {:.3} < {:.3} < {:.3}",
+            gest,
+            origin / self.scale,
+            gest.scale,
+            origin * self.scale
+        );
+        self.fingers == gest.fingers
+            && match self.direction {
+                PinchDirection::In => origin * self.scale <= gest.scale,
+                PinchDirection::Out => origin / self.scale >= gest.scale,
+            }
+    }
+}
+
+impl HoldTrigger {
+    pub(crate) fn matches(&self, gest: &HoldGesture, ctime: u32) -> bool {
+        self.fingers == gest.fingers && ctime.saturating_sub(gest.begin_time) >= self.time
+    }
+}
+
 impl Trigger {
     pub(crate) fn repeated(&self) -> bool {
         match self {
@@ -81,73 +120,4 @@ impl Trigger {
             Trigger::Hold(_) => true,
         }
     }
-}
-
-/// Common struct for triggers in a certain direction over a certain distance:
-/// swipes and shears.
-/// Wow, why rust still has the same record problems that haskell does? Why
-/// can't I just have my anonymous structs
-#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
-pub struct CardinalTrigger {
-    pub fingers: FingerCount,
-    pub direction: Direction,
-    pub distance: Distance,
-    pub repeated: bool,
-}
-impl CardinalTrigger {
-    pub(crate) fn matches_swipe(&self, gest: &SwipeGesture, o: Origin) -> bool {
-        self.fingers.0 == gest.fingers
-            && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
-            && ((gest.dx - o.x).abs() >= self.distance.0
-                || (gest.dy - o.y).abs() >= self.distance.0)
-    }
-    // TODO: deduplicate. Same implementation, different types with same shape
-    pub(crate) fn matches_shear(&self, gest: &PinchGesture, o: Origin) -> bool {
-        self.fingers.0 == gest.fingers
-            && self.direction.matches(gest.dx - o.x, gest.dy - o.y)
-            && ((gest.dx - o.x).abs() >= self.distance.0
-                || (gest.dy - o.y).abs() >= self.distance.0)
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
-pub struct PinchTrigger {
-    pub fingers: FingerCount,
-    pub direction: PinchDirection,
-    pub scale: f64,
-    pub repeated: bool,
-}
-impl PinchTrigger {
-    pub(crate) fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
-        log::trace!(
-            "consider {:?}, {:.3} < {:.3} < {:.3}",
-            gest,
-            origin / self.scale,
-            gest.scale,
-            origin * self.scale
-        );
-        self.fingers.0 == gest.fingers
-            && match self.direction {
-                PinchDirection::In => origin * self.scale <= gest.scale,
-                PinchDirection::Out => origin / self.scale >= gest.scale,
-            }
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy, Deserialize)]
-pub struct HoldTrigger {
-    pub fingers: FingerCount,
-    pub time: u32,
-}
-impl HoldTrigger {
-    pub(crate) fn matches(&self, gest: &HoldGesture, ctime: u32) -> bool {
-        self.fingers.0 == gest.fingers && ctime.saturating_sub(gest.begin_time) >= self.time
-    }
-}
-
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub(crate) struct Origin {
-    pub x: f64,
-    pub y: f64,
-    pub scale: f64,
 }

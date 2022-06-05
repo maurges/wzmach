@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use uinput::event::keyboard::Key;
 
+/// Keyboard key with instances for deserialization
 #[derive(PartialEq, Debug)]
 pub struct ConfigKey(pub Key);
 
