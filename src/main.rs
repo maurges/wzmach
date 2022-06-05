@@ -31,7 +31,7 @@ fn parse_opts() -> Opts {
     );
 
     let debug_events = bpaf::command(
-        "debug-gestures",
+        "debug-events",
         Some("Print all incoming libinput gesture events and execute nothing"),
         bpaf::Info::default()
             .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")

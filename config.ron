@@ -1,0 +1,126 @@
+(
+    // Distance to move your fingers to trigger a /swipe/ gesture. Acceleration applies
+    swipe_distance: 100,
+
+    // Distance to move your fingers to trigger a /shear/ gesture. Acceleration applies
+    shear_distance: 100,
+
+    // Sort-of-distance to move your fingers to trigger a /pinch/ gesture. This
+    // is calculated as zoom multiplier as if you were zooming a picture with
+    // your pinch
+    pinch_distance: 1.4,
+
+    // Triggers that execute in any window in any display environment
+    global_triggers: [
+
+        // Open a new tab in most apps
+        (
+            trigger: Swipe (
+                fingers: 3,
+                direction: Up,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["RightControl"],
+                sequence: ["T"],
+            )
+        ),
+
+        // Close a tab in most apps
+        (
+            trigger: Swipe (
+                fingers: 3,
+                direction: Down,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["RightControl"],
+                sequence: ["W"],
+            )
+        ),
+
+        // Move to the right tab in most apps (natural scroll direction)
+        (
+            trigger: Swipe (
+                fingers: 3,
+                direction: Left,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["RightControl"],
+                sequence: ["PageDown"],
+            )
+        ),
+
+        // Move to the left tab in most apps (natural scroll direction)
+        (
+            trigger: Swipe (
+                fingers: 3,
+                direction: Right,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["RightControl"],
+                sequence: ["PageUp"],
+            )
+        ),
+
+        (
+            trigger: Hold (
+                fingers: 4,
+            ),
+            action: UinputAction (
+                modifiers: ["RightControl", "RightAlt"],
+                sequence: ["Esc"],
+            )
+        ),
+    ],
+
+    // Triggers that execute in any window in an X11 session
+    //
+    // Those actions mimic the default four-finger gestures in KWin on wayland
+    x11_triggers: [
+
+        // Open/close the overview effect
+        (
+            trigger: Swipe (
+                fingers: 4,
+                direction: Up,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["LeftMeta"],
+                sequence: ["W"],
+            )
+        ),
+
+        // Move one desktop to the right (natural scroll)
+        (
+            trigger: Swipe (
+                fingers: 4,
+                direction: Left,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["LeftMeta"],
+                sequence: ["Right"],
+            )
+        ),
+
+        // Move one desktop to the left (natural scroll)
+        (
+            trigger: Swipe (
+                fingers: 4,
+                direction: Right,
+                repeated: false,
+            ),
+            action: UinputAction (
+                modifiers: ["LeftMeta"],
+                sequence: ["Left"],
+            )
+        ),
+    ],
+
+    // Triggers that execute in any window in a wayland session
+    wayland_triggers: [],
+)
