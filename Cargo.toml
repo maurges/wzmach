@@ -3,9 +3,8 @@ name = "wzmach"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+bpaf = { git = "https://github.com/d86leader/bpaf", rev = "08259bbe30bb8622afefcfdebdd540554205a37a" }
 env_logger = "0.9"
 input = "0.7"
 libc = "0.2"

@@ -41,6 +41,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
+name = "bpaf"
+version = "0.4.3"
+source = "git+https://github.com/d86leader/bpaf?rev=08259bbe30bb8622afefcfdebdd540554205a37a#08259bbe30bb8622afefcfdebdd540554205a37a"
+
+[[package]]
 name = "byteorder"
 version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -536,6 +541,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 name = "wzmach"
 version = "0.1.0"
 dependencies = [
+ "bpaf",
  "env_logger",
  "input",
  "libc",

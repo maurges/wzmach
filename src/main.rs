@@ -4,32 +4,79 @@ mod config;
 mod gesture_event;
 mod input_producer;
 
+#[derive(PartialEq, Eq, Debug, Clone)]
+enum Opts {
+    Run,
+    DebugConfig { path: String },
+    DebugGestures,
+    DebugEvents,
+}
+
+fn parse_opts() -> Opts {
+    let debug_config = bpaf::command(
+        "debug-config",
+        Some("Parse config file and check it for errors"),
+        bpaf::Info::default()
+            .descr("Parse and print a config file")
+            .for_parser(bpaf::positional("FILENAME")),
+    )
+    .map(|path| Opts::DebugConfig { path });
+
+    let debug_gestures = bpaf::command(
+        "debug-gestures",
+        Some("Print all completed gestures but execute no actions"),
+        bpaf::Info::default()
+            .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")
+            .for_parser(bpaf::Parser::pure(Opts::DebugGestures)),
+    );
+
+    let debug_events = bpaf::command(
+        "debug-gestures",
+        Some("Print all incoming libinput gesture events and execute nothing"),
+        bpaf::Info::default()
+            .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")
+            .for_parser(bpaf::Parser::pure(Opts::DebugEvents)),
+    );
+
+    let run = bpaf::Parser::pure(Opts::Run);
+
+    let parser = debug_config
+        .or_else(debug_gestures)
+        .or_else(debug_events)
+        .or_else(run);
+
+    bpaf::Info::default()
+        .descr("Touchpad gesture engine")
+        .for_parser(parser)
+        .run()
+}
+
 fn main() {
     env_logger::init();
-    log::info!("initialized logging");
+    log::trace!("initialized logging");
 
-    // debug stuff, controlled by args
-    let mut args = std::env::args();
-    let _name = args.next().unwrap();
-    if let Some(s) = args.next() {
-        let producer = input_producer::GestureProducer::new();
-        log::debug!("Created input connection");
-        if s == "all" {
+    match parse_opts() {
+        Opts::DebugConfig { path } => {
+            let c = config::Config::load(path);
+            println!("{:?}", c);
+        }
+
+        Opts::DebugGestures => debug_events(),
+
+        Opts::DebugEvents => {
+            let producer = input_producer::GestureProducer::new();
+            log::debug!("Created input connection");
             for event in producer {
                 log::debug!("update: {:?}", event);
             }
-        } else if s == "events" {
-            debug_events(producer);
-        } else if s == "config" {
-            let location = args.next().unwrap_or("./config.ron".to_string());
-            let c = config::Config::load(location);
-            println!("{:?}", c);
         }
-        return;
+
+        Opts::Run => run(),
     }
+}
 
+fn run() {
     // read config
-
     let home = std::env::var_os("HOME").unwrap().into_string().unwrap();
     let config_home = std::env::var_os("XDG_CONFIG_HOME")
         .map(|x| x.into_string().unwrap())
@@ -60,11 +107,13 @@ fn main() {
     }
 }
 
-fn debug_events(producer: input_producer::GestureProducer) {
+fn debug_events() {
+    let producer = input_producer::GestureProducer::new();
+    log::debug!("Created input connection");
     let triggers = {
         let mut ts = Vec::new();
-        use gesture_event::trigger::*;
         use common::{Direction, PinchDirection};
+        use gesture_event::trigger::*;
         for fingers in 2..5 {
             for repeated in [false, true] {
                 ts.push(Trigger::Swipe(CardinalTrigger {
@@ -128,10 +177,7 @@ fn debug_events(producer: input_producer::GestureProducer) {
                     repeated,
                 }));
             }
-            ts.push(Trigger::Hold(HoldTrigger {
-                fingers,
-                time: 50,
-            }));
+            ts.push(Trigger::Hold(HoldTrigger { fingers, time: 50 }));
         }
         ts
     };
