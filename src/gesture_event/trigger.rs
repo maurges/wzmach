@@ -110,6 +110,8 @@ impl HoldTrigger {
     }
 }
 
+/* Impl for generalized field access */
+
 impl Trigger {
     pub(crate) fn repeated(&self) -> bool {
         match self {
@@ -118,6 +120,15 @@ impl Trigger {
             Trigger::Shear(s) => s.repeated,
             // you can't repeat holds, but repeated are simpler to handle
             Trigger::Hold(_) => true,
+        }
+    }
+
+    pub(crate) fn direction(&self) -> Option<Direction> {
+        match self {
+            Trigger::Swipe(s) => Some(s.direction),
+            Trigger::Pinch(_) => None,
+            Trigger::Shear(s) => Some(s.direction),
+            Trigger::Hold(_) => None,
         }
     }
 }
