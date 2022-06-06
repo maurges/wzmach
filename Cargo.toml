@@ -3,6 +3,10 @@ name = "wzmach"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+lto = true
+codegen-units = 1
+
 [dependencies]
 bpaf = "0.4"
 env_logger = "0.9"

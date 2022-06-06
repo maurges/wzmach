@@ -5,6 +5,7 @@ TARGET = $(HOME)/.local/bin
 
 target/release/wzmach:
 	$(CARGO) build --release
+	strip $@
 
 install: target/release/wzmach
 	cp $< "$(TARGET)/wzmach"
