@@ -75,11 +75,11 @@ impl Config {
     {
         log::trace!("Reading {}", path);
         let s = std::fs::read_to_string(path).map_err(|e| {
-            log::debug!("Error reading: {}", e);
+            log::error!("Error reading: {}", e);
             e
         })?;
         ron::from_str(&s).map_err(|e| {
-            log::debug!("Error decoding RON: {}", e);
+            log::error!("Error decoding RON: {}", e);
             std::io::Error::new(std::io::ErrorKind::Other, e)
         })
     }

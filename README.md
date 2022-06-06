@@ -53,10 +53,6 @@ in the style of the old libinput-gestures.
 You can then edit that config file to add or replace your gestures. After
 editing this file you need to restart wzmach.
 
-To see the errors in your config file you can execute wzmach like this:
-
-    wzmach debug-config path/to/config.ron
-
 The default config provides description of top-level fields. Below I describe
 the available gestures.
 
@@ -142,7 +138,7 @@ Example:
             // 4 or 5 in practice. 3 fingers means two digits + 1 thumb
             fingers: 2,
 
-            // Direction of the pinch in terms of zoomin the picture: In or Out
+            // Direction of the pinch in terms of zooming the picture: In or Out
             direction: In,
 
             // Can this gesture be repeated multiple times without lifting the
