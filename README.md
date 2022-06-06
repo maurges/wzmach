@@ -9,7 +9,7 @@ Pronounciation: [ `[vzmax]` ](https://forvo.com/search/%D0%B2%D0%B7%D0%BC%D0%B0%
 ## Installation
 
 If you don't have a rust toolchain, you can grab a statically-linked binary
-release in the [releases page](./TODO.md). You can put that file anywhere in
+release in the [releases page](https://github.com/d86leader/wzmach/releases). You can put that file anywhere in
 your PATH, for example into `~/.local/bin`.
 
 **Important**: for wzmach to work you need to give it permission to observe and
