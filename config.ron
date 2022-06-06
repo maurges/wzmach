@@ -64,16 +64,6 @@
                 sequence: ["PageUp"],
             )
         ),
-
-        (
-            trigger: Hold (
-                fingers: 4,
-            ),
-            action: UinputAction (
-                modifiers: ["RightControl", "RightAlt"],
-                sequence: ["Esc"],
-            )
-        ),
     ],
 
     // Triggers that execute in any window in an X11 session
