@@ -21,6 +21,10 @@ pub struct Config {
     #[serde(default = "default_pinch")]
     pinch_distance: f64,
 
+    /// Scale to achieve to trigger. Default: 1.4
+    #[serde(default = "default_rotation")]
+    rotation_distance: f64,
+
     /// Triggers executed with any display manager and any window
     #[serde(default = "default_triggers")]
     global_triggers: Vec<ConfigTrigger>,
@@ -105,6 +109,7 @@ impl Config {
                         self.swipe_distance,
                         self.shear_distance,
                         self.pinch_distance,
+                        self.rotation_distance,
                     ),
                     x.action.make(&input_device),
                 )
@@ -122,6 +127,10 @@ fn default_distance() -> u32 {
 fn default_pinch() -> f64 {
     log::debug!("Using default pinch");
     1.4
+}
+fn default_rotation() -> f64 {
+    log::debug!("Using default rotation");
+    60.0
 }
 fn default_triggers() -> Vec<ConfigTrigger> {
     log::debug!("Using default triggers");
