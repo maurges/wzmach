@@ -4,6 +4,7 @@
 
 use input::event::gesture::{
     GestureEndEvent, GestureEventCoordinates, GestureEventTrait, GesturePinchEventTrait,
+    GesturePinchUpdateEvent,
 };
 
 #[derive(PartialEq, Debug, Clone)]
@@ -27,6 +28,7 @@ pub struct PinchGesture {
     pub begin_time: u32,
     pub fingers: i32,
     pub scale: f64,
+    pub angle: f64,
     pub dx: f64,
     pub dy: f64,
 }
@@ -78,6 +80,7 @@ impl Gesture {
                         begin_time: gest.time(),
                         fingers: gest.finger_count(),
                         scale: pc.scale(),
+                        angle: 0.0,
                         dx: 0.0,
                         dy: 0.0,
                     });
@@ -86,6 +89,7 @@ impl Gesture {
                 GesturePinchEvent::Update(ev) => {
                     self.update_coords(ev);
                     self.update_scale(ev);
+                    self.update_angle(ev);
                     GestureState::Ongoing(gest.time())
                 }
                 GesturePinchEvent::End(ev) => {
@@ -138,6 +142,13 @@ impl Gesture {
         match *self {
             Gesture::Pinch(ref mut pinch) => pinch.scale = upd.scale(),
             _ => log::error!("Impossible scale update!"),
+        }
+    }
+
+    fn update_angle(&mut self, upd: &GesturePinchUpdateEvent) {
+        match *self {
+            Gesture::Pinch(ref mut pinch) => pinch.angle += upd.angle_delta(),
+            _ => log::error!("Impossible angle update"),
         }
     }
 

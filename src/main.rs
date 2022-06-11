@@ -112,7 +112,7 @@ fn debug_events() {
     log::debug!("Created input connection");
     let triggers = {
         let mut ts = Vec::new();
-        use common::{Direction, PinchDirection};
+        use common::{Direction, PinchDirection, RotateDirection};
         use gesture_event::trigger::*;
         for fingers in 2..5 {
             for repeated in [false, true] {
@@ -174,6 +174,18 @@ fn debug_events() {
                     fingers,
                     direction: Direction::Right,
                     distance: 100.0,
+                    repeated,
+                }));
+                ts.push(Trigger::Rotate(RotateTrigger {
+                    fingers,
+                    direction: RotateDirection::Anticlockwise,
+                    distance: 45.0,
+                    repeated,
+                }));
+                ts.push(Trigger::Rotate(RotateTrigger {
+                    fingers,
+                    direction: RotateDirection::Clockwise,
+                    distance: 45.0,
                     repeated,
                 }));
             }

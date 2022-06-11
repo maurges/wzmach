@@ -2,7 +2,7 @@
 /// gesture events. Register your 'Trigger's for events and observe them
 /// triggered
 pub mod trigger;
-use crate::common::{Direction, PinchDirection};
+use crate::common::{Direction, PinchDirection, RotateDirection};
 use trigger::{CardinalTrigger, Origin, Trigger};
 
 use crate::input_producer::event::{Gesture, InputEvent};
@@ -30,6 +30,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                 x: 0.0,
                 y: 0.0,
                 scale: 1.0,
+                rotation: 0.0,
             },
             triggered: SortedSet::new(),
         }
@@ -51,6 +52,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
 
                 (Gesture::Pinch(gp), Trigger::Pinch(tp)) => tp.matches(gp, self.adjust.scale),
                 (Gesture::Pinch(gs), Trigger::Shear(ts)) => ts.matches_shear(gs, self.adjust),
+                (Gesture::Pinch(gr), Trigger::Rotate(tr)) => tr.matches(gr, self.adjust.rotation),
                 (Gesture::Pinch(_), _) => false,
 
                 (Gesture::Hold(gh), Trigger::Hold(th)) => th.matches(gh, ctime),
@@ -78,6 +80,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                 x: 0.0,
                 y: 0.0,
                 scale: 1.0,
+                rotation: 0.0,
             };
             // we can retrigger everything again
             self.triggered = sorted_vec::SortedSet::new();
@@ -98,6 +101,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                 });
             }
             // should do the same thing for pinches?
+            // should certainly do the same thing for rotations.
         }
         inds
     }
@@ -110,6 +114,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
         let mut adjusted_h = false;
         let mut adjusted_v = false;
         let mut adjusted_s = false;
+        let mut adjusted_r = false;
         let mut adjust_directional = |t: CardinalTrigger| {
             if t.direction == Direction::Up && !adjusted_v {
                 adjusted_v = true;
@@ -141,6 +146,17 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                         }
                         PinchDirection::Out => {
                             self.adjust.scale /= t.scale;
+                        }
+                    }
+                }
+                Trigger::Rotate(t) if !adjusted_r => {
+                    adjusted_r = true;
+                    match t.direction {
+                        RotateDirection::Anticlockwise => {
+                            self.adjust.rotation -= t.distance;
+                        }
+                        RotateDirection::Clockwise => {
+                            self.adjust.rotation += t.distance;
                         }
                     }
                 }

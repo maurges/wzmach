@@ -8,11 +8,16 @@ pub enum Direction {
     Right,
 }
 
-
 /// In means scale goes 1.0 -> 1.5
 /// Out means scale goes 1.0 -> 0.5
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
 pub enum PinchDirection {
     In,
     Out,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
+pub enum RotateDirection {
+    Clockwise,
+    Anticlockwise,
 }

@@ -4,7 +4,7 @@
 //! match them
 
 use crate::input_producer::event::{HoldGesture, PinchGesture, SwipeGesture};
-use crate::common::{Direction, PinchDirection};
+use crate::common::{Direction, PinchDirection, RotateDirection};
 
 const VSLOPE: f64 = 1.0;
 const HSLOPE: f64 = 1.0 / VSLOPE;
@@ -16,9 +16,11 @@ pub enum Trigger {
     /// Shear is when you move different fingers in different directions.
     /// Usually done by resting your digits and moving your thumb. The direction
     /// is the direction of the thumb, and the distance is relative movement. Be
-    /// careful as vertical shearing can be mistaken by the engine as a pinch.
-    /// Although pinches and shears don't conflict, so you can have that
+    /// careful as vertical shearing can be mistaken by the engine as a pinch
     Shear(CardinalTrigger),
+    /// Rotate is when you rotate your fingers during a pinch. This heavily
+    /// conflicts with shears as far as recognition goes
+    Rotate(RotateTrigger),
     /// Sent only when hold ended
     Hold(HoldTrigger),
     // TODO: hold in progress. Need to track my own time, bleh
@@ -45,6 +47,16 @@ pub struct PinchTrigger {
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
+pub struct RotateTrigger {
+    pub fingers: i32,
+    pub direction: RotateDirection,
+    /// Measured in something like degrees, although on my touchpad 90 units
+    /// don't match a real 90 degree rotation, but it's pretty close
+    pub distance: f64,
+    pub repeated: bool,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct HoldTrigger {
     pub fingers: i32,
     pub time: u32,
@@ -55,6 +67,7 @@ pub(crate) struct Origin {
     pub x: f64,
     pub y: f64,
     pub scale: f64,
+    pub rotation: f64,
 }
 
 /* Impls for matchins */
@@ -67,6 +80,15 @@ impl Direction {
             Direction::Down => dy >= VSLOPE * dx && dy >= -VSLOPE * dx,
             Direction::Right => dx >= HSLOPE * dy && dx >= -HSLOPE * dy,
             Direction::Left => dx <= HSLOPE * dy && dx <= -HSLOPE * dy,
+        }
+    }
+}
+
+impl RotateDirection {
+    fn matches(&self, sign: f64) -> bool {
+        match self {
+            RotateDirection::Anticlockwise => sign < 0.0,
+            RotateDirection::Clockwise => sign > 0.0,
         }
     }
 }
@@ -104,6 +126,15 @@ impl PinchTrigger {
     }
 }
 
+impl RotateTrigger {
+    pub(crate) fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
+        let angle = gest.angle - origin;
+        self.fingers == gest.fingers
+            && self.direction.matches(angle.signum())
+            && angle.abs() >= self.distance
+    }
+}
+
 impl HoldTrigger {
     pub(crate) fn matches(&self, gest: &HoldGesture, ctime: u32) -> bool {
         self.fingers == gest.fingers && ctime.saturating_sub(gest.begin_time) >= self.time
@@ -118,6 +149,7 @@ impl Trigger {
             Trigger::Swipe(s) => s.repeated,
             Trigger::Pinch(p) => p.repeated,
             Trigger::Shear(s) => s.repeated,
+            Trigger::Rotate(r) => r.repeated,
             // you can't repeat holds, but repeated are simpler to handle
             Trigger::Hold(_) => true,
         }
@@ -128,6 +160,7 @@ impl Trigger {
             Trigger::Swipe(s) => Some(s.direction),
             Trigger::Pinch(_) => None,
             Trigger::Shear(s) => Some(s.direction),
+            Trigger::Rotate(_) => None,
             Trigger::Hold(_) => None,
         }
     }
