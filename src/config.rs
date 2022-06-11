@@ -79,7 +79,7 @@ impl Config {
     {
         log::trace!("Reading {}", path);
         let s = std::fs::read_to_string(path).map_err(|e| {
-            log::error!("Error reading: {}", e);
+            log::error!("Error reading config: {}", e);
             e
         })?;
         ron::from_str(&s).map_err(|e| {

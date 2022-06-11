@@ -10,6 +10,11 @@
     // your pinch
     pinch_distance: 1.4,
 
+    // Angle to rotate your fingers to trigger a /rotate/ gesture. Measured in
+    // degrees, but depending on your touchpad driver might not correspond to
+    // real degrees of rotation, or might be accelerated.
+    rotation_distance: 60,
+
     // Triggers that execute in any window in any display environment
     global_triggers: [
 

@@ -152,6 +152,36 @@ Example:
         )
     ),
 
+#### Rotate
+
+Rotate is when you rotate your fingers in one direction around a "center of
+mass" of all your fingers; like rotating a map on your phone. It is extremely
+easy to confuse shears and rotations, so you probably don't want to create
+triggers for both.
+
+Example:
+
+    (
+        trigger: Rotate (
+
+            // Amount of fingers, from 2 to infinity in theory, and from 2 to
+            // 4 or 5 in practice. 3 fingers means two digits + 1 thumb
+            fingers: 2,
+
+            // Direction of the fingers' rotation: Clockwise or Anticlockwise
+            direction: Anticlockwise,
+
+            // Can this gesture be repeated multiple times without lifting the
+            // fingers? true or false
+            repeated: true,
+
+        ),
+        action: UinputAction (
+            modifiers: ["RightControl"],
+            sequence: ["PageUp"],
+        )
+    )
+
 #### Hold
 
 Holding several digits on touchpad without movement. In practice it works like
