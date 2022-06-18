@@ -111,6 +111,9 @@ impl CardinalTrigger {
 
 impl PinchTrigger {
     pub(crate) fn matches(&self, gest: &PinchGesture, origin: f64) -> bool {
+        /*
+        // This is useful when debugging how I broke pinches again, but is too
+        // verbose even for trace
         log::trace!(
             "consider {:?}, {:.3} < {:.3} < {:.3}",
             gest,
@@ -118,6 +121,7 @@ impl PinchTrigger {
             gest.scale,
             origin * self.scale
         );
+        */
         self.fingers == gest.fingers
             && match self.direction {
                 PinchDirection::In => origin * self.scale <= gest.scale,

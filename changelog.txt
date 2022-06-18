@@ -2,3 +2,6 @@
 - Add rotation gesture
 - Add any-command action
 - Can now specify config file to use
+- Rework how sequential gestures are counted
+	This fixes the problem with diagonal swipes triggering a lot of stuff
+	simultaneously

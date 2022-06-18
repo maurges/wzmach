@@ -2,8 +2,7 @@
 /// gesture events. Register your 'Trigger's for events and observe them
 /// triggered
 pub mod trigger;
-use crate::common::{Direction, PinchDirection, RotateDirection};
-use trigger::{CardinalTrigger, Origin, Trigger};
+use trigger::{Origin, Trigger};
 
 use crate::input_producer::event::{Gesture, InputEvent};
 use sorted_vec::SortedSet;
@@ -85,8 +84,11 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
             // we can retrigger everything again
             self.triggered = sorted_vec::SortedSet::new();
         } else {
-            // Move origin for the next triggers in this gesture
-            self.move_origin(&inds);
+            // Move origin for the next triggers in this gesture if something
+            // triggered
+            if inds.len() != 0 {
+                self.move_origin(&gesture);
+            }
             // We can retrigger cardinals in other directions
             let trigger_dirs = inds
                 .iter()
@@ -108,62 +110,22 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
 
     /// Move origin based on what was triggered, so that next triggers execute
     /// correctly from new origin (new finger resting place)
-    fn move_origin(&mut self, triggered: &Vec<usize>) {
-        // Only adjust once in each direction, in case several triggers were in
-        // one direction
-        let mut adjusted_h = false;
-        let mut adjusted_v = false;
-        let mut adjusted_s = false;
-        let mut adjusted_r = false;
-        let mut adjust_directional = |t: CardinalTrigger| {
-            if t.direction == Direction::Up && !adjusted_v {
-                adjusted_v = true;
-                // up is negative
-                self.adjust.y -= t.distance;
-            } else if t.direction == Direction::Down && !adjusted_v {
-                adjusted_v = true;
-                // down is positive
-                self.adjust.y += t.distance;
-            } else if t.direction == Direction::Left && !adjusted_h {
-                adjusted_h = true;
-                // left is positive
-                self.adjust.x -= t.distance;
-            } else if t.direction == Direction::Right && !adjusted_h {
-                adjusted_h = true;
-                // right is negative
-                self.adjust.x += t.distance;
+    fn move_origin(&mut self, gesture: &Gesture) {
+        match gesture {
+            Gesture::None => (),
+            Gesture::Swipe(s) => {
+                self.adjust.x = s.dx;
+                self.adjust.y = s.dy;
             }
-        };
-        for i in triggered {
-            match self.triggers[*i] {
-                Trigger::Swipe(t) => adjust_directional(t),
-                Trigger::Shear(t) => adjust_directional(t),
-                Trigger::Pinch(t) if !adjusted_s => {
-                    adjusted_s = true;
-                    match t.direction {
-                        PinchDirection::In => {
-                            self.adjust.scale *= t.scale;
-                        }
-                        PinchDirection::Out => {
-                            self.adjust.scale /= t.scale;
-                        }
-                    }
-                }
-                Trigger::Rotate(t) if !adjusted_r => {
-                    adjusted_r = true;
-                    match t.direction {
-                        RotateDirection::Anticlockwise => {
-                            self.adjust.rotation -= t.distance;
-                        }
-                        RotateDirection::Clockwise => {
-                            self.adjust.rotation += t.distance;
-                        }
-                    }
-                }
-
-                _ => (),
+            Gesture::Pinch(p) => {
+                self.adjust.x = p.dx;
+                self.adjust.y = p.dy;
+                self.adjust.rotation = p.angle;
+                self.adjust.scale = p.scale;
             }
+            Gesture::Hold(_) => (),
         }
+        log::trace!("Adjusted origin: {:?}", self.adjust);
     }
 }
 
