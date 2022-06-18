@@ -21,7 +21,7 @@ pub struct Config {
     #[serde(default = "default_pinch")]
     pinch_distance: f64,
 
-    /// Scale to achieve to trigger. Default: 1.4
+    /// Spin to achieve to trigger. Default: 60
     #[serde(default = "default_rotation")]
     rotation_distance: f64,
 

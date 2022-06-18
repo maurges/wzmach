@@ -102,8 +102,6 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                     ts.retain(|i| trigger_dirs.contains(&self.triggers[*i].direction()))
                 });
             }
-            // should do the same thing for pinches?
-            // should certainly do the same thing for rotations.
         }
         inds
     }
