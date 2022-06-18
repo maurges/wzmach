@@ -1,3 +1,4 @@
 [?]
 - Add rotation gesture
+- Add any-command action
 - Can now specify config file to use

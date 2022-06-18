@@ -1,13 +1,5 @@
-use thiserror::Error;
+use super::{Action, ActionError};
 use uinput::event::keyboard::Key;
-
-#[derive(Error, Debug)]
-#[error("Failure executing action: {0}")]
-pub struct ActionError(pub String);
-
-pub trait Action {
-    fn execute(&mut self) -> Result<(), ActionError>;
-}
 
 pub struct UinputAction {
     pub device: std::rc::Rc<std::cell::RefCell<uinput::Device>>,
@@ -30,12 +22,6 @@ impl UinputAction {
     }
 }
 
-impl From<uinput::Error> for ActionError {
-    fn from(err: uinput::Error) -> ActionError {
-        ActionError(format!("{}", err))
-    }
-}
-
 impl Action for UinputAction {
     fn execute(&mut self) -> Result<(), ActionError> {
         let mut device = self.device.borrow_mut();
@@ -51,5 +37,11 @@ impl Action for UinputAction {
         }
         device.synchronize()?;
         Ok(())
+    }
+}
+
+impl From<uinput::Error> for ActionError {
+    fn from(err: uinput::Error) -> ActionError {
+        ActionError(format!("{}", err))
     }
 }

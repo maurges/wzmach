@@ -1,6 +1,6 @@
 use bpaf::construct;
 
-mod action_sink;
+mod action;
 mod common;
 mod config;
 mod gesture_event;
@@ -106,7 +106,7 @@ fn run(command_config: Option<String>) {
         for index in action_inds {
             match actions[index].execute() {
                 Ok(()) => (),
-                Err(action_sink::ActionError(msg)) => log::error!("{}", msg),
+                Err(action::ActionError(msg)) => log::error!("{}", msg),
             }
         }
     }

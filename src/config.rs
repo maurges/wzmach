@@ -1,7 +1,7 @@
 mod key;
 mod trigger;
 
-use crate::action_sink as action;
+use crate::action;
 use crate::gesture_event::trigger as gesture;
 use trigger::Trigger;
 
@@ -50,6 +50,13 @@ pub enum ConfigAction {
         modifiers: Vec<key::ConfigKey>,
         sequence: Vec<key::ConfigKey>,
     },
+    CommandAction {
+        path: String,
+        args: Vec<String>,
+    },
+    ShellCommandAction {
+        command: String,
+    },
 }
 
 impl ConfigAction {
@@ -66,6 +73,10 @@ impl ConfigAction {
                 modifiers: modifiers.iter().map(|x| x.0).collect(),
                 sequence: sequence.iter().map(|x| x.0).collect(),
             }),
+            ConfigAction::CommandAction { path, args } =>
+                Box::new(action::CommandAction { path, args }),
+            ConfigAction::ShellCommandAction { command } =>
+                Box::new(action::ShellCommandAction { command }),
         }
     }
 }
