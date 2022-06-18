@@ -21,3 +21,11 @@ pub enum RotateDirection {
     Clockwise,
     Anticlockwise,
 }
+
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Deserialize)]
+pub enum AnyDirection {
+    Cardinal(Direction),
+    Pinch(PinchDirection),
+    Rotate(RotateDirection),
+}

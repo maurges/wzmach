@@ -4,7 +4,7 @@
 //! match them
 
 use crate::input_producer::event::{HoldGesture, PinchGesture, SwipeGesture};
-use crate::common::{Direction, PinchDirection, RotateDirection};
+use crate::common::{Direction, PinchDirection, RotateDirection, AnyDirection};
 
 const VSLOPE: f64 = 1.0;
 const HSLOPE: f64 = 1.0 / VSLOPE;
@@ -159,12 +159,12 @@ impl Trigger {
         }
     }
 
-    pub(crate) fn direction(&self) -> Option<Direction> {
+    pub(crate) fn direction(&self) -> Option<AnyDirection> {
         match self {
-            Trigger::Swipe(s) => Some(s.direction),
-            Trigger::Pinch(_) => None,
-            Trigger::Shear(s) => Some(s.direction),
-            Trigger::Rotate(_) => None,
+            Trigger::Swipe(s) => Some(AnyDirection::Cardinal(s.direction)),
+            Trigger::Pinch(p) => Some(AnyDirection::Pinch(p.direction)),
+            Trigger::Shear(s) => Some(AnyDirection::Cardinal(s.direction)),
+            Trigger::Rotate(r) => Some(AnyDirection::Rotate(r.direction)),
             Trigger::Hold(_) => None,
         }
     }
