@@ -1,4 +1,4 @@
-[?]
+[1.1.0 2022-06-19]
 - Add rotation gesture
 - Add any-command action
 - Can now specify config file to use
