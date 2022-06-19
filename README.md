@@ -54,7 +54,81 @@ You can then edit that config file to add or replace your gestures. After
 editing this file you need to restart wzmach.
 
 The default config provides description of top-level fields. Below I describe
-the available gestures.
+the available gestures and actions.
+
+#### UinputAction
+
+Send keyboard events when a gesture is executed. First, it presses all the
+modifier keys in the order they appear. Then, it clicks (presses and depresses)
+all the sequence keys one after another. After that, all modifier keys get
+depressed in the reverse order.
+
+    // Example: start omni-completion in vim
+    UinputAction (
+
+        // These keys are pressed for all the duration of the action
+        modifiers: ["RightControl"],
+
+        // There keys are pressed one at a time
+        sequence: ["X", "O"],
+
+    )
+
+#### ShellCommandAction
+
+Run a command in the `sh` shell. All wildcards and special symbols get
+interpreted like the shell always does.
+
+    // Example: toggle a scroll lock LED (works in X11 only)
+    CommandAction (
+        command: r#"
+            on=$(xset -q | grep 'Scroll Lock:' | cut -d ":" -f 7)
+            echo $on
+            if [ $on == "off" ]; then
+               xset led named "Scroll Lock"
+            else
+               xset -led named "Scroll Lock"
+            fi
+        "#,
+    ),
+
+The example above features a raw string literal. It's delimited by `r###"` and
+`"###` with any number of `#` symbols, and any symbol can appear inside this
+string. You can use raw string literals anywhere a string is expected in
+config, but it's most useful with this and the next action.
+
+#### CommandAction
+
+Like `ShellCommandAction`, but skip the shell and invoke the command literally.
+The difference between this and that is like a difference between `system` and
+`execv`.
+
+    // Example: unclutter desktop in KDE
+    CommandAction (
+        // Path can be absolute (/usr/bin/qdbus-qt5) or just a command name. In
+        // the second case it's looked up in $PATH
+        path: "qdbus-qt5",
+        args: [
+            "org.kde.KWin",
+            "/KWin",
+            "unclutterDesktop",
+        ],
+        // Actually this example doesn't work because of
+        // https://bugs.freedesktop.org/show_bug.cgi?id=52202
+    ),
+
+Note that you can use this instead of the previous action. In fact, this is
+what you should do if you want your command to run in bash or zsh instead of
+sh.
+
+    CommandAction (
+        path: "/usr/bin/env",
+        args: [
+            "bash",
+            "-c",
+            r##" your command goes here "##,
+        ],
+    ),
 
 #### Swipe
 
@@ -79,16 +153,10 @@ Example configuration:
 
         ),
 
-        // The action to execute upon trigger. Currently only UinputAction is
-        // supported
+        // The action to execute upon trigger. Use UinputAction, CommandAction
+        // or ShellCommandAction here
         action: UinputAction (
-
-            // List of keys to be pressed for the whole action, and released
-            // after
             modifiers: ["RightControl"],
-
-            // List of keys to be pressed and released one after another, while
-            // the modifier keys are pressed
             sequence: ["T"],
         )
     ),
@@ -152,6 +220,36 @@ Example:
         )
     ),
 
+#### Rotate
+
+Rotate is when you rotate your fingers in one direction around a "center of
+mass" of all your fingers; like rotating a map on your phone. It is extremely
+easy to confuse shears and rotations, so you probably don't want to create
+triggers for both.
+
+Example:
+
+    (
+        trigger: Rotate (
+
+            // Amount of fingers, from 2 to infinity in theory, and from 2 to
+            // 4 or 5 in practice. 3 fingers means two digits + 1 thumb
+            fingers: 2,
+
+            // Direction of the fingers' rotation: Clockwise or Anticlockwise
+            direction: Anticlockwise,
+
+            // Can this gesture be repeated multiple times without lifting the
+            // fingers? true or false
+            repeated: true,
+
+        ),
+        action: UinputAction (
+            modifiers: ["RightControl"],
+            sequence: ["PageUp"],
+        )
+    )
+
 #### Hold
 
 Holding several digits on touchpad without movement. In practice it works like
@@ -209,3 +307,6 @@ future I want to give the ability to interpret scrolling events as gestures.
 
 It's called [RON](https://github.com/ron-rs/ron) and no, although the idea for
 it lies on the surface.
+
+##### A line for vim whitespace detection
+vim: ts=4 sw=4 sts=4

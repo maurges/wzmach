@@ -1,0 +1,10 @@
+[1.1.0 2022-06-19]
+- Add rotation gesture
+- Add any-command action
+- Can now specify config file to use
+- Rework how sequential gestures are counted
+	This fixes the problem with diagonal swipes triggering a lot of stuff
+	simultaneously
+- Make other gestures reversible, not just cardinals
+	So now you can rotate in one direction, in other, and then in the first
+	direction again, without lifting your fingers

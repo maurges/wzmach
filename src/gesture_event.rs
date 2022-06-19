@@ -2,8 +2,7 @@
 /// gesture events. Register your 'Trigger's for events and observe them
 /// triggered
 pub mod trigger;
-use crate::common::{Direction, PinchDirection};
-use trigger::{CardinalTrigger, Origin, Trigger};
+use trigger::{Origin, Trigger};
 
 use crate::input_producer::event::{Gesture, InputEvent};
 use sorted_vec::SortedSet;
@@ -30,6 +29,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                 x: 0.0,
                 y: 0.0,
                 scale: 1.0,
+                rotation: 0.0,
             },
             triggered: SortedSet::new(),
         }
@@ -51,6 +51,7 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
 
                 (Gesture::Pinch(gp), Trigger::Pinch(tp)) => tp.matches(gp, self.adjust.scale),
                 (Gesture::Pinch(gs), Trigger::Shear(ts)) => ts.matches_shear(gs, self.adjust),
+                (Gesture::Pinch(gr), Trigger::Rotate(tr)) => tr.matches(gr, self.adjust.rotation),
                 (Gesture::Pinch(_), _) => false,
 
                 (Gesture::Hold(gh), Trigger::Hold(th)) => th.matches(gh, ctime),
@@ -78,12 +79,16 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                 x: 0.0,
                 y: 0.0,
                 scale: 1.0,
+                rotation: 0.0,
             };
             // we can retrigger everything again
             self.triggered = sorted_vec::SortedSet::new();
         } else {
-            // Move origin for the next triggers in this gesture
-            self.move_origin(&inds);
+            // Move origin for the next triggers in this gesture if something
+            // triggered
+            if inds.len() != 0 {
+                self.move_origin(&gesture);
+            }
             // We can retrigger cardinals in other directions
             let trigger_dirs = inds
                 .iter()
@@ -97,57 +102,28 @@ impl<T: Iterator<Item = InputEvent>> EventAdapter<T> {
                     ts.retain(|i| trigger_dirs.contains(&self.triggers[*i].direction()))
                 });
             }
-            // should do the same thing for pinches?
         }
         inds
     }
 
     /// Move origin based on what was triggered, so that next triggers execute
     /// correctly from new origin (new finger resting place)
-    fn move_origin(&mut self, triggered: &Vec<usize>) {
-        // Only adjust once in each direction, in case several triggers were in
-        // one direction
-        let mut adjusted_h = false;
-        let mut adjusted_v = false;
-        let mut adjusted_s = false;
-        let mut adjust_directional = |t: CardinalTrigger| {
-            if t.direction == Direction::Up && !adjusted_v {
-                adjusted_v = true;
-                // up is negative
-                self.adjust.y -= t.distance;
-            } else if t.direction == Direction::Down && !adjusted_v {
-                adjusted_v = true;
-                // down is positive
-                self.adjust.y += t.distance;
-            } else if t.direction == Direction::Left && !adjusted_h {
-                adjusted_h = true;
-                // left is positive
-                self.adjust.x -= t.distance;
-            } else if t.direction == Direction::Right && !adjusted_h {
-                adjusted_h = true;
-                // right is negative
-                self.adjust.x += t.distance;
+    fn move_origin(&mut self, gesture: &Gesture) {
+        match gesture {
+            Gesture::None => (),
+            Gesture::Swipe(s) => {
+                self.adjust.x = s.dx;
+                self.adjust.y = s.dy;
             }
-        };
-        for i in triggered {
-            match self.triggers[*i] {
-                Trigger::Swipe(t) => adjust_directional(t),
-                Trigger::Shear(t) => adjust_directional(t),
-                Trigger::Pinch(t) if !adjusted_s => {
-                    adjusted_s = true;
-                    match t.direction {
-                        PinchDirection::In => {
-                            self.adjust.scale *= t.scale;
-                        }
-                        PinchDirection::Out => {
-                            self.adjust.scale /= t.scale;
-                        }
-                    }
-                }
-
-                _ => (),
+            Gesture::Pinch(p) => {
+                self.adjust.x = p.dx;
+                self.adjust.y = p.dy;
+                self.adjust.rotation = p.angle;
+                self.adjust.scale = p.scale;
             }
+            Gesture::Hold(_) => (),
         }
+        log::trace!("Adjusted origin: {:?}", self.adjust);
     }
 }
 

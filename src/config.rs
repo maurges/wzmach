@@ -1,7 +1,7 @@
 mod key;
 mod trigger;
 
-use crate::action_sink as action;
+use crate::action;
 use crate::gesture_event::trigger as gesture;
 use trigger::Trigger;
 
@@ -20,6 +20,10 @@ pub struct Config {
     /// Scale to achieve to trigger. Default: 1.4
     #[serde(default = "default_pinch")]
     pinch_distance: f64,
+
+    /// Spin to achieve to trigger. Default: 60
+    #[serde(default = "default_rotation")]
+    rotation_distance: f64,
 
     /// Triggers executed with any display manager and any window
     #[serde(default = "default_triggers")]
@@ -46,6 +50,13 @@ pub enum ConfigAction {
         modifiers: Vec<key::ConfigKey>,
         sequence: Vec<key::ConfigKey>,
     },
+    CommandAction {
+        path: String,
+        args: Vec<String>,
+    },
+    ShellCommandAction {
+        command: String,
+    },
 }
 
 impl ConfigAction {
@@ -62,6 +73,10 @@ impl ConfigAction {
                 modifiers: modifiers.iter().map(|x| x.0).collect(),
                 sequence: sequence.iter().map(|x| x.0).collect(),
             }),
+            ConfigAction::CommandAction { path, args } =>
+                Box::new(action::CommandAction { path, args }),
+            ConfigAction::ShellCommandAction { command } =>
+                Box::new(action::ShellCommandAction { command }),
         }
     }
 }
@@ -75,7 +90,7 @@ impl Config {
     {
         log::trace!("Reading {}", path);
         let s = std::fs::read_to_string(path).map_err(|e| {
-            log::error!("Error reading: {}", e);
+            log::error!("Error reading config: {}", e);
             e
         })?;
         ron::from_str(&s).map_err(|e| {
@@ -105,6 +120,7 @@ impl Config {
                         self.swipe_distance,
                         self.shear_distance,
                         self.pinch_distance,
+                        self.rotation_distance,
                     ),
                     x.action.make(&input_device),
                 )
@@ -122,6 +138,10 @@ fn default_distance() -> u32 {
 fn default_pinch() -> f64 {
     log::debug!("Using default pinch");
     1.4
+}
+fn default_rotation() -> f64 {
+    log::debug!("Using default rotation");
+    60.0
 }
 fn default_triggers() -> Vec<ConfigTrigger> {
     log::debug!("Using default triggers");

@@ -1,4 +1,6 @@
-mod action_sink;
+use bpaf::construct;
+
+mod action;
 mod common;
 mod config;
 mod gesture_event;
@@ -6,7 +8,7 @@ mod input_producer;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 enum Opts {
-    Run,
+    Run { config_path: Option<String> },
     DebugConfig { path: String },
     DebugGestures,
     DebugEvents,
@@ -38,7 +40,11 @@ fn parse_opts() -> Opts {
             .for_parser(bpaf::Parser::pure(Opts::DebugEvents)),
     );
 
-    let run = bpaf::Parser::pure(Opts::Run);
+    let config_path = bpaf::long("config")
+        .help("Path to a config file to use instead of default")
+        .argument("PATH")
+        .optional();
+    let run = construct!(Opts::Run {config_path});
 
     let parser = debug_config
         .or_else(debug_gestures)
@@ -71,22 +77,21 @@ fn main() {
             }
         }
 
-        Opts::Run => run(),
+        Opts::Run {config_path} => run(config_path),
     }
 }
 
-fn run() {
+fn run(command_config: Option<String>) {
     // read config
-    let home = std::env::var_os("HOME").unwrap().into_string().unwrap();
-    let config_home = std::env::var_os("XDG_CONFIG_HOME")
-        .map(|x| x.into_string().unwrap())
-        .unwrap_or_else(|| home + "/.config");
-    let config_dir = config_home + "/wzmach/";
-    let config: config::Config = {
-        let common = config::Config::load(config_dir.clone() + "config.ron").unwrap_or_default();
-        // TODO maybe: search other locations
-        common
-    };
+    let config_path = command_config.unwrap_or_else(|| {
+        let home = std::env::var_os("HOME").unwrap().into_string().unwrap();
+        let config_home = std::env::var_os("XDG_CONFIG_HOME")
+            .map(|x| x.into_string().unwrap())
+            .unwrap_or_else(|| home + "/.config");
+        let config_dir = config_home + "/wzmach/";
+        config_dir + "config.ron"
+    });
+    let config = config::Config::load(config_path).unwrap_or_default();
     let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
 
     // run
@@ -101,7 +106,7 @@ fn run() {
         for index in action_inds {
             match actions[index].execute() {
                 Ok(()) => (),
-                Err(action_sink::ActionError(msg)) => log::error!("{}", msg),
+                Err(action::ActionError(msg)) => log::error!("{}", msg),
             }
         }
     }
@@ -112,7 +117,7 @@ fn debug_events() {
     log::debug!("Created input connection");
     let triggers = {
         let mut ts = Vec::new();
-        use common::{Direction, PinchDirection};
+        use common::{Direction, PinchDirection, RotateDirection};
         use gesture_event::trigger::*;
         for fingers in 2..5 {
             for repeated in [false, true] {
@@ -174,6 +179,18 @@ fn debug_events() {
                     fingers,
                     direction: Direction::Right,
                     distance: 100.0,
+                    repeated,
+                }));
+                ts.push(Trigger::Rotate(RotateTrigger {
+                    fingers,
+                    direction: RotateDirection::Anticlockwise,
+                    distance: 45.0,
+                    repeated,
+                }));
+                ts.push(Trigger::Rotate(RotateTrigger {
+                    fingers,
+                    direction: RotateDirection::Clockwise,
+                    distance: 45.0,
                     repeated,
                 }));
             }
