@@ -86,9 +86,10 @@ impl ConfigAction {
 impl Config {
     pub fn load<P>(path: P) -> std::io::Result<Config>
     where
-        P: AsRef<std::path::Path> + std::fmt::Display,
+        P: AsRef<std::path::Path>,
     {
-        log::trace!("Reading {}", path);
+        let path = path.as_ref();
+        log::trace!("Reading {}", path.display());
         let s = std::fs::read_to_string(path).map_err(|e| {
             log::error!("Error reading config: {}", e);
             e
