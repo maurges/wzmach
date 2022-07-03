@@ -89,7 +89,14 @@ fn run(command_config: Option<String>) {
             .map(|x| x.into_string().unwrap())
             .unwrap_or_else(|| home + "/.config");
         let config_dir = config_home + "/wzmach/";
-        config_dir + "config.ron"
+
+        let local_path = config_dir + "config.ron";
+        let etc_path = "/etc/wzmach/config.ron".to_owned();
+        if std::path::Path::new(&local_path).exists() {
+            local_path
+        } else {
+            etc_path
+        }
     });
     let config = config::Config::load(config_path).unwrap_or_default();
     let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
