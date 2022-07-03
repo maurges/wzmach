@@ -39,9 +39,25 @@ Same as the above, but you can grab the source code and build it with
 
 You can then install with `cargo install` and grant the permissions by hand, or use
 
-    make install
+    make install-local
 
 which executes the above commands for you.
+
+If you instead want a multi-user install, you can run
+
+    sudo make install
+
+### Uninstallation
+
+If you did installation by hand, you can simply remove all the files you copied:
+
+    rm ~/.local/bin/wzmach ~/.config/wzmach/config.ron
+
+If you did a multi-user install via Makefile, you can remove it with make as well:
+
+    sudo make uninstall
+
+This will not remove the configs the users created for themselves.
 
 ## Configuration
 

@@ -6,6 +6,7 @@ edition = "2021"
 [profile.release]
 lto = true
 codegen-units = 1
+strip = true
 
 [dependencies]
 bpaf = "0.4"
