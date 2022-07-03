@@ -24,6 +24,9 @@ install-local: $(BUILT_TARGET)
 	mkdir -p "$(LOCAL_PREFIX)"
 	sudo install $< "$(LOCAL_PREFIX)/wzmach" --group=input "--owner=$(LOCAL_USER)" --mode=2754
 
+autostart: wzmach.desktop
+	install wzmach.desktop "$(LOCAL_USER)/.config/autostart/wzmach.desktop"
+
 uninstall:
 	rm "$(PREFIX)/wzmach"
 	rm "$(CONFIG_PREFIX)/wzmach/config.ron"

@@ -47,6 +47,20 @@ If you instead want a multi-user install, you can run
 
     sudo make install
 
+### Autostart
+
+If you want wzmach to start with your desktop session, just put the file
+[wzmach.desktop](./wzmach.desktop) to `~/.config/autostart/`. Or if you're
+already installing with make, you can run
+
+    make autostart
+
+Caution: if you're using, KDE it may restore wzmach with the rest of your
+session by itself, so upon restarts you may end up with two and then more
+instances of wzmach running. You can fix that by removing wzmach from session
+restoring in
+`System Settings -> Startup and Shutdown -> Desktop Session -> Don't restore these applications`
+
 ### Uninstallation
 
 If you did installation by hand, you can simply remove all the files you copied:
