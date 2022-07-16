@@ -1,10 +1,10 @@
 use super::{Action, ActionError};
-use uinput::event::keyboard::Key;
+use uinput::event::keyboard::Keyboard;
 
 pub struct UinputAction {
     pub device: std::rc::Rc<std::cell::RefCell<uinput::Device>>,
-    pub modifiers: Vec<Key>,
-    pub sequence: Vec<Key>,
+    pub modifiers: Vec<Keyboard>,
+    pub sequence: Vec<Keyboard>,
 }
 
 impl UinputAction {
