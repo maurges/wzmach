@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use uinput::event::keyboard::{Keyboard, Key, KeyPad, Misc};
+use uinput::event::keyboard::{Key, KeyPad, Keyboard, Misc};
 
 /// Keyboard key with instances for deserialization
 #[derive(PartialEq, Debug)]

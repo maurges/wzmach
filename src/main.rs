@@ -44,7 +44,7 @@ fn parse_opts() -> Opts {
         .help("Path to a config file to use instead of default")
         .argument("PATH")
         .optional();
-    let run = construct!(Opts::Run {config_path});
+    let run = construct!(Opts::Run { config_path });
 
     let parser = debug_config
         .or_else(debug_gestures)
@@ -77,7 +77,7 @@ fn main() {
             }
         }
 
-        Opts::Run {config_path} => run(config_path),
+        Opts::Run { config_path } => run(config_path),
     }
 }
 

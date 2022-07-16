@@ -73,10 +73,12 @@ impl ConfigAction {
                 modifiers: modifiers.iter().map(|x| x.0).collect(),
                 sequence: sequence.iter().map(|x| x.0).collect(),
             }),
-            ConfigAction::CommandAction { path, args } =>
-                Box::new(action::CommandAction { path, args }),
-            ConfigAction::ShellCommandAction { command } =>
-                Box::new(action::ShellCommandAction { command }),
+            ConfigAction::CommandAction { path, args } => {
+                Box::new(action::CommandAction { path, args })
+            }
+            ConfigAction::ShellCommandAction { command } => {
+                Box::new(action::ShellCommandAction { command })
+            }
         }
     }
 }
