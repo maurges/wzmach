@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Wzmach
+Comment=Touchpad gesture engine
+Keywords=touchpad
+Categories=Utility
+
+Exec=/usr/bin/env wzmach
+Terminal=false
+
+NoDisplay=true

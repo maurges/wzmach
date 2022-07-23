@@ -39,9 +39,39 @@ Same as the above, but you can grab the source code and build it with
 
 You can then install with `cargo install` and grant the permissions by hand, or use
 
-    make install
+    make install-local
 
 which executes the above commands for you.
+
+If you instead want a multi-user install, you can run
+
+    sudo make install
+
+### Autostart
+
+If you want wzmach to start with your desktop session, just put the file
+[wzmach.desktop](./wzmach.desktop) to `~/.config/autostart/`. Or if you're
+already installing with make, you can run
+
+    make autostart
+
+Caution: if you're using, KDE it may restore wzmach with the rest of your
+session by itself, so upon restarts you may end up with two and then more
+instances of wzmach running. You can fix that by removing wzmach from session
+restoring in
+`System Settings -> Startup and Shutdown -> Desktop Session -> Don't restore these applications`
+
+### Uninstallation
+
+If you did installation by hand, you can simply remove all the files you copied:
+
+    rm ~/.local/bin/wzmach ~/.config/wzmach/config.ron
+
+If you did a multi-user install via Makefile, you can remove it with make as well:
+
+    sudo make uninstall
+
+This will not remove the configs the users created for themselves.
 
 ## Configuration
 

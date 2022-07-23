@@ -20,6 +20,7 @@ impl Action for CommandAction {
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())
+            .env_remove("DBUS_SYSTEM_BUS_ADDRESS")
             .detach()?;
         log::trace!("Spawned the command");
 
@@ -36,6 +37,7 @@ impl Action for ShellCommandAction {
             .arg(&self.command)
             .stdout(std::process::Stdio::inherit())
             .stderr(std::process::Stdio::inherit())
+            .env_remove("DBUS_SYSTEM_BUS_ADDRESS")
             .detach()?;
         log::trace!("Spawned the command");
 

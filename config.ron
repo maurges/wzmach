@@ -96,9 +96,8 @@
                 direction: Left,
                 repeated: false,
             ),
-            action: UinputAction (
-                modifiers: ["LeftMeta"],
-                sequence: ["Right"],
+            action: ShellCommandAction (
+                command: "qdbus-qt5 org.kde.KWin /KWin org.kde.KWin.nextDesktop",
             )
         ),
 
@@ -109,9 +108,8 @@
                 direction: Right,
                 repeated: false,
             ),
-            action: UinputAction (
-                modifiers: ["LeftMeta"],
-                sequence: ["Left"],
+            action: ShellCommandAction (
+                command: "qdbus-qt5 org.kde.KWin /KWin org.kde.KWin.previousDesktop",
             )
         ),
     ],

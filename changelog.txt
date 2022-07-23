@@ -1,3 +1,9 @@
+[ ]
+- Add the ability to use more kinds of keys (#6)
+- More locations for config, including a global one
+- Fix being unable to run DBUS commands (#4)
+- Improve install script
+
 [1.1.0 2022-06-19]
 - Add rotation gesture
 - Add any-command action
