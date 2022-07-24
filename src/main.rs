@@ -63,8 +63,10 @@ fn main() {
 
     match parse_opts() {
         Opts::DebugConfig { path } => {
-            let c = config::Config::load(path);
-            println!("{:?}", c);
+            match config::Config::load(path) {
+                Ok(c) => println!("Load successful:\n{:?}", c),
+                Err(e) => println!("Error during loading:\n{}", e),
+            }
         }
 
         Opts::DebugGestures => debug_events(),
@@ -77,13 +79,17 @@ fn main() {
             }
         }
 
-        Opts::Run { config_path } => run(config_path),
+        Opts::Run { config_path } => {
+            match load_config(config_path) {
+                Ok(x) => run(x),
+                Err(e) => startup_error(e),
+            }
+        }
     }
 }
 
-fn run(command_config: Option<String>) {
-    // read config
-    let config_path = command_config.unwrap_or_else(|| {
+fn load_config(mb_path: Option<String>) -> Result<config::Config, std::io::Error> {
+    let config_path = mb_path.unwrap_or_else(|| {
         let home = std::env::var_os("HOME").unwrap().into_string().unwrap();
         let config_home = std::env::var_os("XDG_CONFIG_HOME")
             .map(|x| x.into_string().unwrap())
@@ -98,7 +104,11 @@ fn run(command_config: Option<String>) {
             etc_path
         }
     });
-    let config = config::Config::load(config_path).unwrap_or_default();
+    config::Config::load(config_path)
+}
+
+fn run(config: config::Config) {
+    // read config
     let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
 
     // run
@@ -117,6 +127,15 @@ fn run(command_config: Option<String>) {
             }
         }
     }
+}
+
+fn startup_error(e: std::io::Error) {
+    log::error!("Failed to start up: {}", e);
+    notify_rust::Notification::new()
+        .summary("Wzmach failed to start")
+        .body(&format!("{}", e))
+        .show()
+        .unwrap();
 }
 
 fn debug_events() {
