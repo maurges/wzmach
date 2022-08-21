@@ -39,9 +39,9 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
 name = "bpaf"
-version = "0.4.4"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c5a80253f0e9a06b09235e747568813806f76212b96b824701c3693f4359110"
+checksum = "d47cb29c6d11f3f9740f28c36bf9c0019a6c4f34fa4ac049e05f82be96b005ff"
 
 [[package]]
 name = "byteorder"

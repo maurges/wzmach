@@ -1,4 +1,4 @@
-use bpaf::construct;
+use bpaf::{construct, Parser};
 
 mod action;
 mod common;
@@ -15,45 +15,35 @@ enum Opts {
 }
 
 fn parse_opts() -> Opts {
-    let debug_config = bpaf::command(
-        "debug-config",
-        Some("Parse config file and check it for errors"),
-        bpaf::Info::default()
-            .descr("Parse and print a config file")
-            .for_parser(bpaf::positional("FILENAME")),
-    )
-    .map(|path| Opts::DebugConfig { path });
+    let debug_config = bpaf::positional("FILENAME")
+        .to_options()
+        .descr("Parse and print a config file")
+        .command("debug-config")
+        .help("Parse config file and check it for errors")
+        .map(|path| Opts::DebugConfig { path });
 
-    let debug_gestures = bpaf::command(
-        "debug-gestures",
-        Some("Print all completed gestures but execute no actions"),
-        bpaf::Info::default()
-            .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")
-            .for_parser(bpaf::Parser::pure(Opts::DebugGestures)),
-    );
+    let debug_gestures = bpaf::pure(Opts::DebugGestures)
+        .to_options()
+        .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")
+        .command("debug-gestures")
+        .help("Print all completed gestures but execute no actions");
 
-    let debug_events = bpaf::command(
-        "debug-events",
-        Some("Print all incoming libinput gesture events and execute nothing"),
-        bpaf::Info::default()
-            .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")
-            .for_parser(bpaf::Parser::pure(Opts::DebugEvents)),
-    );
+    let debug_events = bpaf::pure(Opts::DebugEvents)
+        .to_options()
+        .descr("If you see nothing you need to `export RUST_LOG=debug` or `trace`")
+        .command("debug-events")
+        .help("Print all incoming libinput gesture events and execute nothing");
 
     let config_path = bpaf::long("config")
         .help("Path to a config file to use instead of default")
         .argument("PATH")
         .optional();
+
     let run = construct!(Opts::Run { config_path });
 
-    let parser = debug_config
-        .or_else(debug_gestures)
-        .or_else(debug_events)
-        .or_else(run);
-
-    bpaf::Info::default()
+    (construct!([debug_config, debug_gestures, debug_events, run]))
+        .to_options()
         .descr("Touchpad gesture engine")
-        .for_parser(parser)
         .run()
 }
 
