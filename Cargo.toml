@@ -9,7 +9,7 @@ codegen-units = 1
 strip = true
 
 [dependencies]
-bpaf = "0.4"
+bpaf = "0.5.2"
 env_logger = { version = "0.9", default-features = false, features = ["atty", "termcolor"] }
 input = { version = "0.7", default-features = false, features = ["udev", "libinput_1_19"] }
 libc = "0.2"
