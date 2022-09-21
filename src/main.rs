@@ -14,7 +14,7 @@ enum Opts {
     DebugEvents,
 }
 
-fn parse_opts() -> Opts {
+fn opts_parser() -> bpaf::OptionParser<Opts> {
     let debug_config = bpaf::positional("FILENAME")
         .to_options()
         .descr("Parse and print a config file")
@@ -34,17 +34,19 @@ fn parse_opts() -> Opts {
         .command("debug-events")
         .help("Print all incoming libinput gesture events and execute nothing");
 
-    let config_path = bpaf::long("config")
+    let run = bpaf::long("config")
         .help("Path to a config file to use instead of default")
         .argument("PATH")
-        .optional();
+        .optional()
+        .map(|config_path| Opts::Run { config_path });
 
-    let run = construct!(Opts::Run { config_path });
-
-    (construct!([debug_config, debug_gestures, debug_events, run]))
+    (construct!([debug_gestures, debug_events, debug_config, run]))
         .to_options()
         .descr("Touchpad gesture engine")
-        .run()
+}
+
+fn parse_opts() -> Opts {
+    opts_parser().run()
 }
 
 fn main() {
@@ -209,5 +211,13 @@ fn debug_events() {
         for i in event {
             log::debug!("triggered: {:?}", triggers[i]);
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn optparse() {
+        super::opts_parser().check_invariants(true)
     }
 }

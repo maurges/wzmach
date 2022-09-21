@@ -9,7 +9,7 @@ codegen-units = 1
 strip = true
 
 [dependencies]
-bpaf = "0.5.2"
+bpaf = "0.5.7"
 env_logger = { version = "0.9", default-features = false, features = ["atty", "termcolor"] }
 input = { version = "0.7", default-features = false, features = ["udev", "libinput_1_19"] }
 libc = "0.2"
@@ -17,7 +17,7 @@ log = "0.4"
 nix = "0.24"
 notify-rust = { version = "4", features = ["d"], default-features = false }
 phf = { version = "0.10", default-features = false, features = ["macros"] }
-ron = "0.7"
+ron = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 sorted-vec = "0.8"
 thiserror = "1.0"
