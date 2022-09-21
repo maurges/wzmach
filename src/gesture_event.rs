@@ -142,6 +142,17 @@ impl<T: Iterator<Item = InputEvent>> Iterator for EventAdapter<T> {
     }
 }
 
+/// Iterator adapter interface for EventAdapter
+pub trait EventAdapterExt: Iterator<Item = InputEvent> + Sized {
+    fn adapt_events(self, triggers: &Vec<Trigger>) -> EventAdapter<Self>;
+}
+
+impl<I: Iterator<Item = InputEvent>> EventAdapterExt for I {
+    fn adapt_events(self, triggers: &Vec<Trigger>) -> EventAdapter<Self> {
+        EventAdapter::new(self, triggers)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::common::Direction;

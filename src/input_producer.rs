@@ -59,6 +59,7 @@ impl GestureProducer {
 
         let mut input = Libinput::new_with_udev(Interface);
         input.udev_assign_seat("seat0").unwrap();
+        log::debug!("Created input connection");
 
         GestureProducer {
             input,

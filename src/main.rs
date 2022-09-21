@@ -52,12 +52,10 @@ fn main() {
     log::trace!("initialized logging");
 
     match parse_opts() {
-        Opts::DebugConfig { path } => {
-            match config::Config::load(path) {
-                Ok(c) => println!("Load successful:\n{:?}", c),
-                Err(e) => println!("Error during loading:\n{}", e),
-            }
-        }
+        Opts::DebugConfig { path } => match config::Config::load(path) {
+            Ok(c) => println!("Load successful:\n{:?}", c),
+            Err(e) => println!("Error during loading:\n{}", e),
+        },
 
         Opts::DebugGestures => debug_events(),
 
@@ -69,12 +67,10 @@ fn main() {
             }
         }
 
-        Opts::Run { config_path } => {
-            match load_config(config_path) {
-                Ok(x) => run(x),
-                Err(e) => startup_error(e),
-            }
-        }
+        Opts::Run { config_path } => match load_config(config_path) {
+            Ok(x) => run(x),
+            Err(e) => startup_error(e),
+        },
     }
 }
 
@@ -98,25 +94,17 @@ fn load_config(mb_path: Option<String>) -> Result<config::Config, std::io::Error
 }
 
 fn run(config: config::Config) {
+    use crate::{action::consumer::EventConsumerExt, gesture_event::EventAdapterExt};
+
     // read config
     let is_wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
+    let (triggers, mut actions) = config.make_triggers(is_wayland);
+    log::info!("Starting up");
 
     // run
-
-    let (triggers, mut actions) = config.make_triggers(is_wayland);
-
-    log::info!("Starting up");
-    let producer = input_producer::GestureProducer::new();
-    log::debug!("Created input connection");
-    let events = gesture_event::EventAdapter::new(producer, &triggers);
-    for action_inds in events {
-        for index in action_inds {
-            match actions[index].execute() {
-                Ok(()) => (),
-                Err(action::ActionError(msg)) => log::error!("{}", msg),
-            }
-        }
-    }
+    input_producer::GestureProducer::new()
+        .adapt_events(&triggers)
+        .consume_events(&mut actions);
 }
 
 fn startup_error(e: std::io::Error) {
@@ -129,6 +117,8 @@ fn startup_error(e: std::io::Error) {
 }
 
 fn debug_events() {
+    use crate::gesture_event::EventAdapterExt;
+
     let producer = input_producer::GestureProducer::new();
     log::debug!("Created input connection");
     let triggers = {
@@ -214,7 +204,7 @@ fn debug_events() {
         }
         ts
     };
-    let events = gesture_event::EventAdapter::new(producer, &triggers);
+    let events = producer.adapt_events(&triggers);
     for event in events {
         for i in event {
             log::debug!("triggered: {:?}", triggers[i]);

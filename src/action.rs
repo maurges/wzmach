@@ -1,4 +1,5 @@
 mod command_action;
+pub mod consumer;
 mod uinput_action;
 
 use thiserror::Error;
