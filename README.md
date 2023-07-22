@@ -37,6 +37,12 @@ Same as the above, but you can grab the source code and build it with
 
     cargo build --release
 
+This requires the following libraries to be present as development versions:
+
+    libdbus libinput libudev
+    # On opensuse they are called:
+    dbus-1-devel libinput-devel libudev1
+
 You can then install with `cargo install` and grant the permissions by hand, or use
 
     make install-local
@@ -46,6 +52,13 @@ which executes the above commands for you.
 If you instead want a multi-user install, you can run
 
     sudo make install
+
+### Installation with nix
+
+Help wanted. I just found out you can't do setgid for nix derivations, but
+there exist the so-called security wrappers.
+
+Other than that, you can build this package with `nix-build`
 
 ### Autostart
 
